@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>SmartEye AI | Industrial Print Inspection</title>
+
+  <!-- Tailwind CDN (สำหรับทำ UI เร็วและสวย) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* ---- Neon / Glass Theme ---- */
+    :root{
+      --bg0:#050b1a; --bg1:#070d23; --panel:#0b1430; --card:#0f1e45;
+      --txt:#eaf1ff; --dim:#7d8db8;
+      --blue:#2f81ff; --green:#38ff9c; --red:#ff3b3b; --line:#1d2a55;
+    }
+    body{
+      background:
+        radial-gradient(1200px 600px at 20% 10%, rgba(47,129,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 80% 30%, rgba(56,255,156,.10), transparent 55%),
+        radial-gradient(900px 500px at 70% 85%, rgba(255,59,59,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      color: var(--txt);
+    }
+    .glass{
+      background: rgba(15, 30, 69, .55);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+    }
+    .glow-blue{ box-shadow: 0 0 0 1px rgba(47,129,255,.25), 0 0 28px rgba(47,129,255,.18); }
+    .glow-green{ box-shadow: 0 0 0 1px rgba(56,255,156,.20), 0 0 28px rgba(56,255,156,.16); }
+    .glow-red{ box-shadow: 0 0 0 1px rgba(255,59,59,.20), 0 0 28px rgba(255,59,59,.14); }
+
+    /* ---- Range slider styling ---- */
+    input[type="range"]{
+      -webkit-appearance: none; appearance:none;
+      height: 6px; border-radius: 999px;
+      background: linear-gradient(90deg, rgba(47,129,255,.9), rgba(56,255,156,.75));
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none; appearance:none;
+      width: 18px; height: 18px; border-radius: 999px;
+      background: rgba(234,241,255,.95);
+      border: 2px solid rgba(47,129,255,.8);
+      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+      cursor: pointer;
+    }
+
+    /* ---- Toggle ---- */
+    .toggle{
+      width: 42px; height: 24px; border-radius: 999px;
+      background: rgba(125,141,184,.35);
+      position: relative; transition: .2s;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .toggle::after{
+      content:""; position:absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 999px;
+      background: rgba(234,241,255,.95);
+      transition: .2s;
+    }
+    input:checked + .toggle{
+      background: rgba(47,129,255,.55);
+      box-shadow: 0 0 20px rgba(47,129,255,.22);
+    }
+    input:checked + .toggle::after{ left: 21px; }
+
+    /* ---- Dropzone ---- */
+    .dropzone{
+      border: 1px dashed rgba(234,241,255,.20);
+      background: rgba(8,18,46,.65);
+    }
+
+    /* ---- Subtle animated lines ---- */
+    .scanline{
+      background: linear-gradient(180deg, transparent, rgba(47,129,255,.10), transparent);
+      animation: scan 6s linear infinite;
+    }
+    @keyframes scan{
+      0%{ transform: translateY(-120%); }
+      100%{ transform: translateY(120%); }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen">
+  <!-- TOP BAR -->
+  <header class="w-full px-6 py-4">
+    <div class="glass rounded-2xl px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 grid place-items-center glow-blue">
+          <span class="text-xl">👁️</span>
+        </div>
+        <div>
+          <div class="text-lg font-semibold tracking-wide">SmartEye AI</div>
+          <div class="text-xs text-[color:var(--dim)]">Industrial Print Inspection Dashboard</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="camStatusDot" class="w-2.5 h-2.5 rounded-full bg-[color:var(--green)] glow-green"></div>
+        <div id="camStatus" class="text-sm font-semibold text-[color:var(--green)]">Camera Status : FREE</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <main class="px-6 pb-8">
+    <div class="grid grid-cols-12 gap-5">
+      <!-- LEFT CONTROL -->
+      <aside class="col-span-12 lg:col-span-4 xl:col-span-3">
+        <div class="glass rounded-2xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-bold tracking-widest text-white/80">CONTROL</div>
+            <div class="text-xs text-white/40">v0.1 UI Prototype</div>
+          </div>
+
+          <!-- Buttons -->
+          <button id="btnCompare"
+            class="w-full rounded-xl py-3 font-bold text-white bg-[color:var(--blue)] hover:brightness-110 transition glow-blue">
+            🔍 COMPARE
+          </button>
+          <button id="btnReset"
+            class="w-full mt-3 rounded-xl py-2.5 font-semibold text-[color:var(--txt)] bg-[#1b2a55] hover:brightness-110 transition">
+            🧹 Clear / Default
+          </button>
+
+          <!-- Result -->
+          <div class="mt-5 space-y-2">
+            <div class="text-[color:var(--blue)] text-xl font-extrabold" id="diffText">Difference : -- %</div>
+            <div class="text-xl font-extrabold" id="resultText">RESULT : -</div>
+            <div class="text-xs font-bold text-[color:var(--dim)]" id="thrText">thr=--</div>
+          </div>
+
+          <!-- Mode -->
+          <div class="mt-5 glass rounded-2xl p-4">
+            <div class="font-bold mb-3">Mode</div>
+            <label class="flex items-center gap-3 cursor-pointer py-1">
+              <input type="radio" name="mode" value="capture" checked class="accent-blue-500"/>
+              <span class="text-sm">Compare Capture</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer py-1">
+              <input type="radio" name="mode" value="realtime" class="accent-blue-500"/>
+              <span class="text-sm">Compare Realtime (Live on Picture 2)</span>
+            </label>
+          </div>
+
+          <!-- ROI Mode -->
+          <div class="mt-4 glass rounded-2xl p-4">
+            <div class="font-bold mb-3">ROI Mode</div>
+            <label class="flex items-center gap-3 cursor-pointer py-1">
+              <input type="radio" name="roiMode" value="auto" checked class="accent-blue-500"/>
+              <span class="text-sm">Auto ROI (Program)</span>
+            </label>
+            <label class="flex items-center gap-3 cursor-pointer py-1">
+              <input type="radio" name="roiMode" value="custom" class="accent-blue-500"/>
+              <span class="text-sm">Custom ROI (Draw/Move)</span>
+            </label>
+            <div class="text-xs text-[color:var(--dim)] mt-3 leading-relaxed">
+              Tip: ในเวอร์ชันต่อจริง คุณจะลากสร้าง ROI ได้บนภาพ และย้ายกรอบที่ Picture2 ได้เหมือน Tkinter
+            </div>
+          </div>
+
+          <!-- Inspection Settings -->
+          <div class="mt-4 glass rounded-2xl p-4 space-y-4">
+            <div class="font-bold">Inspection Settings</div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-[color:var(--dim)] font-semibold">FAIL Limit (%)</div>
+                <div class="text-xs font-bold" id="failVal">10.0%</div>
+              </div>
+              <input id="failRange" type="range" min="1" max="60" value="10" class="w-full mt-2"/>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-[color:var(--dim)] font-semibold">ROI Size (Auto)</div>
+                <div class="text-xs font-bold" id="roiVal">40%</div>
+              </div>
+              <input id="roiRange" type="range" min="20" max="90" value="40" class="w-full mt-2"/>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="text-xs text-[color:var(--dim)] font-semibold">Sensitivity</div>
+                <div class="text-xs font-bold" id="sensVal">60%</div>
+              </div>
+              <input id="sensRange" type="range" min="0" max="100" value="60" class="w-full mt-2"/>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">Enable ROI</div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleROI" type="checkbox" checked class="hidden"/>
+                <span class="toggle"></span>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">Show Defect Overlay</div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleOverlay" type="checkbox" checked class="hidden"/>
+                <span class="toggle"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Image Adjustment -->
+          <div class="mt-4 glass rounded-2xl p-4 space-y-4">
+            <div class="font-bold">Image Adjustment</div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div class="glass rounded-xl p-3">
+                <div class="font-semibold mb-2">Picture 1</div>
+                <div class="text-xs text-[color:var(--dim)]">Brightness <span id="p1B">0%</span></div>
+                <input id="p1Bri" type="range" min="-100" max="100" value="0" class="w-full mt-2"/>
+                <div class="text-xs text-[color:var(--dim)] mt-3">Contrast <span id="p1C">100%</span></div>
+                <input id="p1Con" type="range" min="50" max="250" value="100" class="w-full mt-2"/>
+              </div>
+
+              <div class="glass rounded-xl p-3">
+                <div class="font-semibold mb-2">Picture 2</div>
+                <div class="text-xs text-[color:var(--dim)]">Brightness <span id="p2B">0%</span></div>
+                <input id="p2Bri" type="range" min="-100" max="100" value="0" class="w-full mt-2"/>
+                <div class="text-xs text-[color:var(--dim)] mt-3">Contrast <span id="p2C">100%</span></div>
+                <input id="p2Con" type="range" min="50" max="250" value="100" class="w-full mt-2"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT IMAGES -->
+      <section class="col-span-12 lg:col-span-8 xl:col-span-9">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <!-- Picture 1 -->
+          <div class="glass rounded-2xl p-4 relative overflow-hidden">
+            <div class="absolute inset-0 scanline pointer-events-none opacity-40"></div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-base font-bold">Picture 1</div>
+              <div class="text-xs text-white/40">VIEW 640×420</div>
+            </div>
+
+            <div class="dropzone rounded-2xl p-3 relative">
+              <div class="aspect-[640/420] w-full rounded-xl overflow-hidden bg-[#08122e] relative">
+                <img id="img1" class="w-full h-full object-contain" alt="" />
+                <div id="roi1" class="hidden absolute border-2 border-cyan-300/90 rounded-md"></div>
+              </div>
+
+              <div class="mt-3 grid grid-cols-3 gap-2">
+                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition glow-blue"
+                        onclick="fakeCam(1)">📷 Open Camera</button>
+                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition"
+                        onclick="fakeCapture(1)">📸 Capture</button>
+                <label class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition text-center cursor-pointer">
+                  📂 Upload
+                  <input type="file" accept="image/*" class="hidden" onchange="loadLocalImage(event, 1)" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Picture 2 -->
+          <div class="glass rounded-2xl p-4 relative overflow-hidden">
+            <div class="absolute inset-0 scanline pointer-events-none opacity-40"></div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="text-base font-bold">Picture 2</div>
+              <div class="text-xs text-white/40">VIEW 640×420</div>
+            </div>
+
+            <div class="dropzone rounded-2xl p-3 relative">
+              <div class="aspect-[640/420] w-full rounded-xl overflow-hidden bg-[#08122e] relative">
+                <img id="img2" class="w-full h-full object-contain" alt="" />
+                <div id="roi2" class="hidden absolute border-2 border-yellow-300/90 rounded-md"></div>
+              </div>
+
+              <div class="mt-3 grid grid-cols-3 gap-2">
+                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition glow-blue"
+                        onclick="fakeCam(2)">📷 Open Camera</button>
+                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition"
+                        onclick="fakeCapture(2)">📸 Capture</button>
+                <label class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition text-center cursor-pointer">
+                  📂 Upload
+                  <input type="file" accept="image/*" class="hidden" onchange="loadLocalImage(event, 2)" />
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer hint -->
+        <div class="mt-5 text-xs text-white/40">
+          * UI นี้เป็น Prototype (แยกจาก Python/Tkinter) เพื่อทำ “หน้าตา HTML ล้ำ ๆ” ก่อนต่อระบบจริง
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // ------- Small helpers -------
+    const $ = (id)=>document.getElementById(id);
+
+    function thrFromSensitivity(sens){
+      sens = Math.max(0, Math.min(100, sens|0));
+      // mimic python: 0% -> 90, 100% -> 10
+      const thr = Math.round(90 + (10-90) * (sens/100));
+      return Math.max(1, thr);
+    }
+
+    function setCamStatus(isBusy, owner){
+      if(!isBusy){
+        $("camStatusDot").className = "w-2.5 h-2.5 rounded-full bg-[color:var(--green)] glow-green";
+        $("camStatus").textContent = "Camera Status : FREE";
+        $("camStatus").className = "text-sm font-semibold text-[color:var(--green)]";
+      }else{
+        $("camStatusDot").className = "w-2.5 h-2.5 rounded-full bg-[color:var(--red)] glow-red";
+        $("camStatus").textContent = `Camera Status : BUSY (Picture ${owner})`;
+        $("camStatus").className = "text-sm font-semibold text-[color:var(--red)]";
+      }
+    }
+
+    // ------- Fake camera buttons (UI demo only) -------
+    let busy = false;
+    function fakeCam(owner){
+      busy = true;
+      setCamStatus(true, owner);
+      // demo: auto-release after 2 sec
+      setTimeout(()=>{ busy=false; setCamStatus(false); }, 2000);
+    }
+    function fakeCapture(owner){
+      // demo only
+      alert(`Capture (demo) for Picture ${owner}\n\nต่อจริง: ปุ่มนี้จะเรียก backend/python เพื่อ capture frame`);
+    }
+
+    // ------- Load local image preview -------
+    function loadLocalImage(evt, target){
+      const file = evt.target.files?.[0];
+      if(!file) return;
+      const url = URL.createObjectURL(file);
+      if(target===1) $("img1").src = url;
+      else $("img2").src = url;
+    }
+
+    // ------- Controls bindings -------
+    const failRange = $("failRange");
+    const roiRange  = $("roiRange");
+    const sensRange = $("sensRange");
+
+    function syncLabels(){
+      $("failVal").textContent = `${(+failRange.value).toFixed(1)}%`;
+      $("roiVal").textContent  = `${roiRange.value}%`;
+      $("sensVal").textContent = `${sensRange.value}%`;
+      $("thrText").textContent = `thr=${thrFromSensitivity(+sensRange.value)}`;
+    }
+    [failRange, roiRange, sensRange].forEach(r => r.addEventListener("input", syncLabels));
+    syncLabels();
+
+    // brightness/contrast labels
+    function pctB(v){ return `${v>0?'+':''}${v}%`; }
+    function pctC(v){ return `${v}%`; }
+
+    $("p1Bri").addEventListener("input", e => $("p1B").textContent = pctB(+e.target.value));
+    $("p2Bri").addEventListener("input", e => $("p2B").textContent = pctB(+e.target.value));
+    $("p1Con").addEventListener("input", e => $("p1C").textContent = pctC(+e.target.value));
+    $("p2Con").addEventListener("input", e => $("p2C").textContent = pctC(+e.target.value));
+
+    // ------- Compare button (UI demo) -------
+    $("btnCompare").addEventListener("click", ()=>{
+      // demo random result
+      const diff = (Math.random()*18).toFixed(2);
+      $("diffText").textContent = `Difference : ${diff} %`;
+
+      const failLimit = +failRange.value;
+      if(+diff > failLimit){
+        $("resultText").textContent = "❌ FAIL";
+        $("resultText").className = "text-xl font-extrabold text-[color:var(--red)]";
+      }else{
+        $("resultText").textContent = "✅ PASS";
+        $("resultText").className = "text-xl font-extrabold text-[color:var(--green)]";
+      }
+    });
+
+    $("btnReset").addEventListener("click", ()=>{
+      failRange.value = 10;
+      roiRange.value = 40;
+      sensRange.value = 60;
+      $("p1Bri").value = 0; $("p2Bri").value = 0;
+      $("p1Con").value = 100; $("p2Con").value = 100;
+      $("toggleROI").checked = true;
+      $("toggleOverlay").checked = true;
+
+      $("diffText").textContent = "Difference : -- %";
+      $("resultText").textContent = "RESULT : -";
+      $("resultText").className = "text-xl font-extrabold text-white";
+      syncLabels();
+      $("p1B").textContent = "0%"; $("p2B").textContent = "0%";
+      $("p1C").textContent = "100%"; $("p2C").textContent = "100%";
+    });
+  </script>
+</body>
+</html>
