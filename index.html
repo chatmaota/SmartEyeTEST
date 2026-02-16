@@ -4,22 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>SmartEye HUD | JARVIS Industrial Print Inspection</title>
-
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
     :root{
-      --bg0:#02040c;
-      --bg1:#050b1a;
-      --hud:#00e5ff;
-      --hud2:#5cffc9;
+      --bg0:#02040c; --bg1:#050b1a;
+      --hud:#00e5ff; --hud2:#5cffc9;
       --warn:#ff3b3b;
-      --txt:#eaf6ff;
-      --dim:rgba(234,246,255,.55);
+      --txt:#eaf6ff; --dim:rgba(234,246,255,.55);
       --panel: rgba(8,18,46,.45);
-      --stroke: rgba(0,229,255,.18);
-      --stroke2: rgba(92,255,201,.14);
       --shadow: rgba(0,0,0,.55);
     }
 
@@ -35,11 +28,9 @@
       min-height: 100vh;
     }
 
-    /* grid overlay */
     body::before{
       content:"";
-      position: fixed;
-      inset:0;
+      position: fixed; inset:0;
       pointer-events:none;
       background:
         linear-gradient(rgba(0,229,255,.06) 1px, transparent 1px),
@@ -49,12 +40,9 @@
       mix-blend-mode: screen;
       z-index: 0;
     }
-
-    /* scanline overlay */
     body::after{
       content:"";
-      position: fixed;
-      inset:-30%;
+      position: fixed; inset:-30%;
       pointer-events:none;
       background: linear-gradient(180deg, transparent, rgba(0,229,255,.10), transparent);
       animation: scan 7s linear infinite;
@@ -67,7 +55,6 @@
       100%{ transform: translateY(40%); }
     }
 
-    /* glass HUD panel */
     .hud-panel{
       background: var(--panel);
       border: 1px solid rgba(0,229,255,.18);
@@ -77,29 +64,23 @@
       position: relative;
       z-index: 1;
     }
-
     .hud-title{
       letter-spacing: .22em;
       text-transform: uppercase;
       font-weight: 800;
       color: rgba(234,246,255,.85);
     }
-
     .hud-glow{
       box-shadow:
         0 0 0 1px rgba(0,229,255,.25),
         0 0 32px rgba(0,229,255,.16),
         0 0 58px rgba(92,255,201,.08);
     }
-
-    .hud-corners{
-      position: relative;
-    }
+    .hud-corners{ position: relative; }
     .hud-corners:before,
     .hud-corners:after{
       content:"";
-      position:absolute;
-      inset:10px;
+      position:absolute; inset:10px;
       border: 1px dashed rgba(0,229,255,.22);
       border-radius: 16px;
       pointer-events:none;
@@ -110,7 +91,6 @@
       border-color: rgba(92,255,201,.12);
       opacity:.45;
     }
-
     .hud-mono{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       letter-spacing: .08em;
@@ -172,10 +152,8 @@
       border-radius: 18px;
     }
 
-    /* HUD ring (header) */
     .hud-ring{
-      width: 170px;
-      height: 170px;
+      width: 160px; height: 160px;
       border-radius: 999px;
       position: relative;
       background:
@@ -191,23 +169,18 @@
       overflow: hidden;
     }
     .hud-ring:before{
-      content:"";
-      position:absolute;
-      inset:16px;
+      content:""; position:absolute; inset:16px;
       border-radius: 999px;
       border: 1px solid rgba(0,229,255,.28);
     }
     .hud-ring:after{
-      content:"";
-      position:absolute;
-      inset:38px;
+      content:""; position:absolute; inset:38px;
       border-radius: 999px;
       border: 1px dashed rgba(92,255,201,.18);
       opacity:.8;
     }
     .hud-ring .spin{
-      position:absolute;
-      inset:-10px;
+      position:absolute; inset:-10px;
       border-radius: 999px;
       border: 2px solid rgba(0,229,255,.22);
       border-left-color: transparent;
@@ -217,7 +190,7 @@
     }
     @keyframes spin{ to{ transform: rotate(360deg);} }
 
-    /* stage (video/img/roi) */
+    /* stage */
     .media-stage{
       position: relative;
       width: 100%;
@@ -226,13 +199,12 @@
     }
     .media-stage video,
     .media-stage img{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
+      position:absolute; inset:0;
+      width:100%; height:100%;
       object-fit: contain;
     }
     .media-stage video{ display:none; }
+
     .roi-box{
       position:absolute;
       border: 2px solid rgba(0,255,255,.9);
@@ -248,9 +220,7 @@
       box-shadow: 0 0 24px rgba(255,230,0,.12);
     }
     .roi-hint{
-      position:absolute;
-      bottom: 10px;
-      left: 12px;
+      position:absolute; bottom: 10px; left: 12px;
       font-size: 12px;
       color: rgba(234,246,255,.65);
       background: rgba(0,0,0,.25);
@@ -260,6 +230,26 @@
       pointer-events:none;
     }
     .draw-cursor{ cursor: crosshair !important; }
+
+    /* overlay canvas layer */
+    .ov-layer{
+      position:absolute; inset:0 indicating: 0;
+      width:100%; height:100%;
+      pointer-events:none;
+      mix-blend-mode: screen;
+      opacity: .95;
+    }
+
+    /* small input */
+    .hud-input{
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(0,229,255,.22);
+      border-radius: 12px;
+      padding: 8px 10px;
+      color: rgba(234,246,255,.92);
+      outline: none;
+    }
+    .hud-input::placeholder{ color: rgba(234,246,255,.38); }
   </style>
 </head>
 
@@ -268,20 +258,18 @@
   <header class="px-6 py-4">
     <div class="hud-panel hud-glow hud-corners px-5 py-4 flex items-center justify-between gap-6">
       <div class="flex items-center gap-4">
-        <div class="hud-ring">
-          <div class="spin"></div>
-        </div>
+        <div class="hud-ring"><div class="spin"></div></div>
         <div>
           <div class="text-xl font-extrabold tracking-wide">SMART EYE · HUD</div>
-          <div class="hud-mono text-xs mt-1">SYSTEM: ONLINE · SECURE LINK: OK · FPS: 30</div>
-          <div class="hud-mono text-xs mt-1">INSPECTOR: PRINT · MODEL: v0.2 · PIPELINE: READY</div>
+          <div class="hud-mono text-xs mt-1">SYSTEM: ONLINE · SECURE LINK: OK · FPS: <span id="fpsText">--</span></div>
+          <div class="hud-mono text-xs mt-1">INSPECTOR: PRINT · MODEL: v1.0 · PIPELINE: READY</div>
         </div>
       </div>
 
       <div class="text-right">
         <div class="hud-title text-xs">CAMERA STATUS</div>
         <div id="camStatus" class="text-sm font-extrabold text-cyan-200">FREE</div>
-        <div class="hud-mono text-xs mt-1">NODE: INSPECT-01 · MODE: CAPTURE</div>
+        <div class="hud-mono text-xs mt-1">NODE: INSPECT-01 · MODE: <span id="modeText">CAPTURE</span></div>
         <div class="hud-mono text-xs mt-1" id="permHint">PERMISSION: UNKNOWN</div>
       </div>
     </div>
@@ -290,7 +278,6 @@
   <!-- MAIN -->
   <main class="px-6 pb-8">
     <div class="grid grid-cols-12 gap-5">
-
       <!-- LEFT CONTROL -->
       <aside class="col-span-12 lg:col-span-4 xl:col-span-3">
         <div class="hud-panel hud-corners p-4">
@@ -300,15 +287,19 @@
           </div>
 
           <button id="btnCompare" class="btn-jarvis w-full">🔍 ANALYZE / COMPARE</button>
+          <button id="btnExport" class="btn-jarvis w-full mt-3">📄 EXPORT REPORT</button>
           <button id="btnReset" class="btn-jarvis w-full mt-3 warn">🧹 RESET</button>
 
           <div class="mt-5">
             <div class="hud-title text-xs mb-2">DIAGNOSTICS</div>
             <div class="hud-mono text-xs">DIFF: <span id="diffText">--</span>%</div>
+            <div class="hud-mono text-xs mt-1">DIFF (SMOOTH): <span id="diffSmoothText">--</span>%</div>
             <div class="hud-mono text-xs mt-1">RESULT: <span id="resultText">-</span></div>
             <div class="hud-mono text-xs mt-1">THR: <span id="thrText">--</span></div>
+            <div class="hud-mono text-xs mt-1">ALIGN: <span id="alignText">dx=0 dy=0</span></div>
           </div>
 
+          <!-- MODE -->
           <div class="mt-5 hud-panel p-4">
             <div class="hud-title text-xs mb-3">MODE</div>
             <label class="flex items-center gap-3 cursor-pointer py-1">
@@ -321,8 +312,10 @@
             </label>
           </div>
 
+          <!-- ROI CONTROL -->
           <div class="mt-4 hud-panel p-4">
             <div class="hud-title text-xs mb-3">ROI CONTROL</div>
+
             <label class="flex items-center gap-3 cursor-pointer py-1">
               <input type="radio" name="roiMode" value="auto" checked class="accent-cyan-300"/>
               <span class="text-sm">Auto ROI (Program)</span>
@@ -340,11 +333,22 @@
               </label>
             </div>
 
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-sm font-semibold">Lock ROI Size</div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleLockROI" type="checkbox" class="hidden"/>
+                <span class="toggle"></span>
+              </label>
+            </div>
+
+            <button id="btnCopyROI12" class="btn-jarvis w-full mt-3">📐 COPY ROI1 → ROI2 (SIZE)</button>
+
             <div class="mt-3 hud-mono text-xs">ROI1: <span id="roi1Text" class="text-white/90">-</span></div>
             <div class="mt-1 hud-mono text-xs">ROI2: <span id="roi2Text" class="text-white/90">-</span></div>
-            <div class="mt-2 hud-mono text-[11px]">Tip: Custom ROI → ลากเพื่อสร้างกรอบ • ลากกรอบเพื่อย้าย</div>
+            <div class="mt-2 hud-mono text-[11px]">Tip: Lock ON → ขยับได้อย่างเดียว (ไม่เปลี่ยนขนาด)</div>
           </div>
 
+          <!-- SETTINGS -->
           <div class="mt-4 hud-panel p-4 space-y-4">
             <div class="hud-title text-xs">INSPECTION SETTINGS</div>
 
@@ -358,18 +362,42 @@
 
             <div>
               <div class="flex items-center justify-between">
-                <div class="hud-mono text-[11px]">AUTO ROI SIZE</div>
-                <div class="hud-mono text-[11px] text-white/90" id="roiVal">40%</div>
-              </div>
-              <input id="roiRange" type="range" min="20" max="90" value="40" class="w-full mt-2"/>
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between">
                 <div class="hud-mono text-[11px]">SENSITIVITY</div>
                 <div class="hud-mono text-[11px] text-white/90" id="sensVal">60%</div>
               </div>
               <input id="sensRange" type="range" min="0" max="100" value="60" class="w-full mt-2"/>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="hud-mono text-[11px]">SMOOTH (FRAMES)</div>
+                <div class="hud-mono text-[11px] text-white/90" id="smoothVal">8</div>
+              </div>
+              <input id="smoothRange" type="range" min="1" max="20" value="8" class="w-full mt-2"/>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">Heatmap Overlay</div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleHeatmap" type="checkbox" checked class="hidden"/>
+                <span class="toggle"></span>
+              </label>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold">Auto Align (dx/dy)</div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleAlign" type="checkbox" checked class="hidden"/>
+                <span class="toggle"></span>
+              </label>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="hud-mono text-[11px]">ALIGN RANGE (px)</div>
+                <div class="hud-mono text-[11px] text-white/90" id="alignRangeVal">8</div>
+              </div>
+              <input id="alignRange" type="range" min="0" max="20" value="8" class="w-full mt-2"/>
             </div>
 
             <div class="flex items-center justify-between">
@@ -381,6 +409,19 @@
             </div>
           </div>
 
+          <!-- PRESET -->
+          <div class="mt-4 hud-panel p-4">
+            <div class="hud-title text-xs mb-3">ROI PRESET (MACHINE / JOB / CUSTOMER)</div>
+            <input id="presetKey" class="hud-input w-full" placeholder="เช่น: TCRB-COR1 | JOB123 | ABC" />
+            <div class="grid grid-cols-3 gap-2 mt-3">
+              <button id="btnPresetSave" class="btn-jarvis w-full">💾 SAVE</button>
+              <button id="btnPresetLoad" class="btn-jarvis w-full">📥 LOAD</button>
+              <button id="btnPresetDel"  class="btn-jarvis w-full warn">🗑️ DEL</button>
+            </div>
+            <div class="hud-mono text-xs mt-3" id="presetMsg">-</div>
+          </div>
+
+          <!-- PERMISSION -->
           <div class="mt-4 hud-panel p-4">
             <div class="hud-title text-xs mb-2">PERMISSION CHECK</div>
             <div class="hud-mono text-xs" id="permText">Camera: checking...</div>
@@ -388,14 +429,14 @@
         </div>
       </aside>
 
-      <!-- RIGHT IMAGES -->
+      <!-- RIGHT -->
       <section class="col-span-12 lg:col-span-8 xl:col-span-9">
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
           <!-- Picture 1 -->
           <div class="hud-panel hud-corners p-4">
             <div class="flex items-center justify-between mb-3">
-              <div class="hud-title text-xs">PICTURE 1</div>
+              <div class="hud-title text-xs">PICTURE 1 (BASE)</div>
               <div class="hud-mono text-xs">VIEW 640×420</div>
             </div>
 
@@ -423,7 +464,7 @@
           <!-- Picture 2 -->
           <div class="hud-panel hud-corners p-4">
             <div class="flex items-center justify-between mb-3">
-              <div class="hud-title text-xs">PICTURE 2</div>
+              <div class="hud-title text-xs">PICTURE 2 (LIVE / TARGET)</div>
               <div class="hud-mono text-xs">VIEW 640×420</div>
             </div>
 
@@ -433,13 +474,14 @@
                   <video id="vid2" playsinline autoplay muted></video>
                   <img id="img2" alt="" />
                   <div id="roi2" class="roi-box yellow"></div>
-                  <div class="roi-hint">Custom ROI: ลากเพื่อเลือก • ลากกรอบเพื่อย้าย</div>
+                  <canvas id="ov2" class="ov-layer"></canvas>
+                  <div class="roi-hint">Realtime: overlay + heatmap • Custom ROI ใช้ ROI2</div>
                 </div>
               </div>
 
               <div class="mt-3 grid grid-cols-3 gap-2">
                 <button id="openCam2" class="btn-jarvis w-full">📷 OPEN</button>
-                <button id="cap2" class="btn-jarvis w-full">📸 CAPTURE</button>
+                <告诉 id="cap2" class="btn-jarvis w-full">📸 CAPTURE</button>
                 <label class="btn-jarvis w-full text-center cursor-pointer">
                   📂 UPLOAD
                   <input type="file" accept="image/*" class="hidden" id="up2" />
@@ -447,11 +489,10 @@
               </div>
             </div>
           </div>
-
         </div>
 
         <div class="mt-5 hud-mono text-xs">
-          * เปิดกล้องจริงด้วย <span class="text-white/90">navigator.mediaDevices.getUserMedia()</span> → ต้องเปิดผ่าน https และ Allow camera ใน Chrome
+          * กล้องใช้ <span class="text-white/90">getUserMedia()</span> → ต้อง https และ Allow camera
         </div>
       </section>
     </div>
@@ -460,16 +501,71 @@
   <canvas id="capCanvas" class="hidden"></canvas>
 
   <script>
+    // ===========================
+    //  Utilities
+    // ===========================
     const $ = (id)=>document.getElementById(id);
+    const nowStamp = ()=> new Date().toISOString().replace('T',' ').replace(/\..+/,'');
 
-    // ===== Threshold helper =====
     function thrFromSensitivity(sens){
       sens = Math.max(0, Math.min(100, sens|0));
+      // 0% -> 90, 100% -> 10 (เหมือนแนว python เดิม)
       const thr = Math.round(90 + (10-90) * (sens/100));
       return Math.max(1, thr);
     }
 
-    // ===== Camera status =====
+    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+    // contain-rect mapping for object-fit:contain (สำคัญกับ ROI)
+    function getContainRect(stageW, stageH, mediaW, mediaH){
+      const stageAR = stageW / stageH;
+      const mediaAR = mediaW / mediaH;
+      let drawW, drawH, offX, offY;
+
+      if(mediaAR > stageAR){
+        drawW = stageW;
+        drawH = stageW / mediaAR;
+        offX = 0;
+        offY = (stageH - drawH) / 2;
+      }else{
+        drawH = stageH;
+        drawW = stageH * mediaAR;
+        offY = 0;
+        offX = (stageW - drawW) / 2;
+      }
+      return {offX, offY, drawW, drawH};
+    }
+
+    function stageRoiToMediaRoi(stageEl, roiPx, mediaW, mediaH){
+      const r = stageEl.getBoundingClientRect();
+      const {offX, offY, drawW, drawH} = getContainRect(r.width, r.height, mediaW, mediaH);
+
+      const x1 = Math.max(roiPx.x, offX);
+      const y1 = Math.max(roiPx.y, offY);
+      const x2 = Math.min(roiPx.x + roiPx.w, offX + drawW);
+      const y2 = Math.min(roiPx.y + roiPx.h, offY + drawH);
+
+      const cw = Math.max(1, x2 - x1);
+      const ch = Math.max(1, y2 - y1);
+
+      const mx = ((x1 - offX) / drawW) * mediaW;
+      const my = ((y1 - offY) / drawH) * mediaH;
+      const mw = (cw / drawW) * mediaW;
+      const mh = (ch / drawH) * mediaH;
+
+      return {mx, my, mw, mh};
+    }
+
+    function setModeText(){
+      const v = document.querySelector('input[name="mode"]:checked')?.value || "capture";
+      $("modeText").textContent = (v === "realtime") ? "REALTIME" : "CAPTURE";
+    }
+
+    // ===========================
+    //  Camera
+    // ===========================
+    const streams = {1:null, 2:null};
+
     function setCamStatus(isBusy, owner){
       if(!isBusy){
         $("camStatus").textContent = "FREE";
@@ -479,9 +575,6 @@
         $("camStatus").className = "text-sm font-extrabold text-red-300";
       }
     }
-
-    // ===== Real camera (getUserMedia) =====
-    const streams = {1:null, 2:null};
 
     async function openCamera(which){
       try{
@@ -510,7 +603,6 @@
       }catch(err){
         setCamStatus(false);
         console.error("openCamera error:", err);
-
         const map = {
           NotAllowedError: "ไม่อนุญาต Camera (โดน Block หรือยังไม่ได้ Allow)",
           NotFoundError: "ไม่พบกล้อง (หรือกล้องถูกปิด/ไม่ถูกตรวจพบ)",
@@ -552,7 +644,6 @@
       img.style.opacity = "1";
     }
 
-    // ===== Upload preview =====
     function loadLocalImage(file, which){
       if(!file) return;
       const url = URL.createObjectURL(file);
@@ -562,7 +653,9 @@
       stopCamera(which);
     }
 
-    // ===== ROI interaction (drag to create + drag to move) =====
+    // ===========================
+    //  ROI (draw + move + lock size)
+    // ===========================
     const roiState = {
       1: { active:false, drawing:false, moving:false, x:0,y:0,w:0,h:0, startX:0,startY:0, moveDX:0, moveDY:0 },
       2: { active:false, drawing:false, moving:false, x:0,y:0,w:0,h:0, startX:0,startY:0, moveDX:0, moveDY:0 }
@@ -572,7 +665,7 @@
       return document.querySelector('input[name="roiMode"]:checked')?.value === "custom";
     }
     function roiEnabled(){ return $("toggleROI").checked; }
-    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+    function roiLocked(){ return $("toggleLockROI").checked; }
 
     function updateRoiText(which, n){
       const el = which===1 ? $("roi1Text") : $("roi2Text");
@@ -622,6 +715,7 @@
 
         const p = getPos(e);
 
+        // click inside ROI => move
         if(st.active){
           const within =
             p.x >= st.x && p.x <= st.x + st.w &&
@@ -632,7 +726,21 @@
             st.moveDY = p.y - st.y;
             return;
           }
+
+          // Lock size ON: click outside -> move ROI (keep size)
+          if(roiLocked()){
+            st.moving = true;
+            st.moveDX = st.w/2;
+            st.moveDY = st.h/2;
+            st.x = clamp(p.x - st.moveDX, 0, p.w - st.w);
+            st.y = clamp(p.y - st.moveDY, 0, p.h - st.h);
+            setROIBox(which);
+            return;
+          }
         }
+
+        // start drawing ROI (only if not locked or not active)
+        if(roiLocked() && st.active) return;
 
         st.drawing = true;
         st.active = true;
@@ -654,10 +762,8 @@
           st.y = Math.min(y1,y2);
           st.w = Math.abs(x2-x1);
           st.h = Math.abs(y2-y1);
-
           if(st.w < 6) st.w = 6;
           if(st.h < 6) st.h = 6;
-
           setROIBox(which);
         }else if(st.moving){
           st.x = clamp(p.x - st.moveDX, 0, p.w - st.w);
@@ -683,42 +789,705 @@
 
     function applyRoiCursor(){
       [$("stage1"), $("stage2")].forEach(s=>{
-        if(roiEnabled() && isCustomROI()) s.classList.add("draw-cursor");
+        if(roiEnabled() && isCustomROI() && !(roiLocked())) s.classList.add("draw-cursor");
         else s.classList.remove("draw-cursor");
       });
     }
 
-    // ===== Controls bindings =====
+    // Copy ROI1 -> ROI2 size (normalized)
+    function copyRoiSize12(){
+      const s1 = roiState[1];
+      if(!s1.active){
+        alert("ROI1 ยังไม่มีกรอบครับ (ลากเลือก ROI ใน Picture 1 ก่อน)");
+        return;
+      }
+      const stage1 = $("stage1");
+      const stage2 = $("stage2");
+      const r1 = stage1.getBoundingClientRect();
+      const r2 = stage2.getBoundingClientRect();
+
+      const nw = s1.w / r1.width;
+      const nh = s1.h / r1.height;
+
+      const s2 = roiState[2];
+      s2.active = true;
+      s2.w = Math.max(6, Math.round(nw * r2.width));
+      s2.h = Math.max(6, Math.round(nh * r2.height));
+      s2.x = Math.round((r2.width - s2.w) / 2);
+      s2.y = Math.round((r2.height - s2.h) / 2);
+      setROIBox(2);
+    }
+
+    // ===========================
+    //  Preset Save/Load (localStorage)
+    // ===========================
+    function normROI(which){
+      const st = roiState[which];
+      const stage = which===1 ? $("stage1") : $("stage2");
+      const r = stage.getBoundingClientRect();
+      if(!st.active) return null;
+      return {
+        nx: st.x / r.width,
+        ny: st.y / r.height,
+        nw: st.w / r.width,
+        nh: st.h / r.height
+      };
+    }
+
+    function applyNormROI(which, n){
+      const stage = which===1 ? $("stage1") : $("stage2");
+      const r = stage.getBoundingClientRect();
+      const st = roiState[which];
+      if(!n){
+        st.active = false;
+        setROIBox(which);
+        return;
+      }
+      st.active = true;
+      st.w = Math.max(6, Math.round(n.nw * r.width));
+      st.h = Math.max(6, Math.round(n.nh * r.height));
+      st.x = clamp(Math.round(n.nx * r.width), 0, r.width - st.w);
+      st.y = clamp(Math.round(n.ny * r.height), 0, r.height - st.h);
+      setROIBox(which);
+    }
+
+    function presetKey(){
+      const k = ($("presetKey").value || "").trim();
+      return k ? `smarteye_preset::${k}` : "";
+    }
+
+    function presetMsg(t){ $("presetMsg").textContent = t; }
+
+    function savePreset(){
+      const k = presetKey();
+      if(!k){
+        presetMsg("❗ ใส่ key ก่อน เช่น: TCRB-COR1 | JOB123 | ABC");
+        return;
+      }
+      const payload = {
+        ts: Date.now(),
+        lock: roiLocked(),
+        roi1: normROI(1),
+        roi2: normROI(2)
+      };
+      localStorage.setItem(k, JSON.stringify(payload));
+      presetMsg(`✅ Saved: ${k.replace("smarteye_preset::","")} (${nowStamp()})`);
+    }
+
+    function loadPreset(){
+      const k = presetKey();
+      if(!k){
+        presetMsg("❗ ใส่ key ก่อน");
+        return;
+      }
+      const raw = localStorage.getItem(k);
+      if(!raw){
+        presetMsg("ไม่พบ preset นี้");
+        return;
+      }
+      const payload = JSON.parse(raw);
+      $("toggleLockROI").checked = !!payload.lock;
+      applyNormROI(1, payload.roi1);
+      applyNormROI(2, payload.roi2);
+      applyRoiCursor();
+      presetMsg(`📥 Loaded: ${k.replace("smarteye_preset::","")} (${new Date(payload.ts).toLocaleString()})`);
+    }
+
+    function delPreset(){
+      const k = presetKey();
+      if(!k){
+        presetMsg("❗ ใส่ key ก่อน");
+        return;
+      }
+      localStorage.removeItem(k);
+      presetMsg(`🗑️ Deleted: ${k.replace("smarteye_preset::","")}`);
+    }
+
+    // ===========================
+    //  Compare Engine (Capture + Realtime)
+    //  Features:
+    //    - Heatmap overlay
+    //    - Auto Align (dx/dy translation)
+    //    - Smoothing
+    // ===========================
+    const rt = {
+      w: 320, h: 210,
+      cBase: document.createElement("canvas"),
+      cLive: document.createElement("canvas"),
+      cDiff: document.createElement("canvas"),
+      q: [],  // smoothing queue
+      lastAlign: {dx:0, dy:0},
+      on:false,
+      raf:null,
+      fps:{t0:performance.now(), frames:0}
+    };
+    rt.cBase.width = rt.w; rt.cBase.height = rt.h;
+    rt.cLive.width = rt.w; rt.cLive.height = rt.h;
+    rt.cDiff.width = rt.w; rt.cDiff.height = rt.h;
+
+    function isRealtimeMode(){
+      return document.querySelector('input[name="mode"]:checked')?.value === "realtime";
+    }
+
+    function overlayEnabled(){ return $("toggleOverlay").checked; }
+    function heatmapEnabled(){ return $("toggleHeatmap").checked; }
+    function alignEnabled(){ return $("toggleAlign").checked; }
+    function alignRange(){ return +$("alignRange").value; }
+    function smoothN(){ return +$("smoothRange").value; }
+
+    function clearOverlay2(){
+      const ov = $("ov2");
+      const r = ov.getBoundingClientRect();
+      ov.width = Math.max(1, Math.round(r.width));
+      ov.height = Math.max(1, Math.round(r.height));
+      ov.getContext("2d").clearRect(0,0,ov.width,ov.height);
+    }
+
+    // Color map for heatmap (0..255)
+    function heatColor(v){
+      // v: 0..255 -> blue/cyan -> yellow -> red
+      const t = v / 255;
+      let r,g,b;
+      if(t < 0.33){
+        // blue -> cyan
+        const k = t/0.33;
+        r = 0;
+        g = Math.round(160*k + 60);
+        b = 255;
+      }else if(t < 0.66){
+        // cyan -> yellow
+        const k = (t-0.33)/0.33;
+        r = Math.round(255*k);
+        g = 255;
+        b = Math.round(255*(1-k));
+      }else{
+        // yellow -> red
+        const k = (t-0.66)/0.34;
+        r = 255;
+        g = Math.round(255*(1-k));
+        b = 0;
+      }
+      return [r,g,b];
+    }
+
+    // Auto Align: search best dx/dy in small space by minimizing SAD
+    function findBestShift(baseData, liveData, w, h, maxShift){
+      if(maxShift <= 0) return {dx:0, dy:0};
+
+      let best = {dx:0, dy:0};
+      let bestScore = Infinity;
+
+      // sample step to speed
+      const step = 2; // skip pixels
+      for(let dy=-maxShift; dy<=maxShift; dy++){
+        for(let dx=-maxShift; dx<=maxShift; dx++){
+          let score = 0;
+          let cnt = 0;
+
+          const x0 = Math.max(0, dx);
+          const y0 = Math.max(0, dy);
+          const x1 = Math.min(w, w+dx);
+          const y1 = Math.min(h, h+dy);
+
+          for(let y=y0; y<y1; y+=step){
+            let row = y*w;
+            let row2 = (y-dy)*w;
+            for(let x=x0; x<x1; x+=step){
+              const i = ((row + x) << 2);
+              const j = ((row2 + (x-dx)) << 2);
+
+              const dr = Math.abs(baseData[i] - liveData[j]);
+              const dg = Math.abs(baseData[i+1] - liveData[j+1]);
+              const db = Math.abs(baseData[i+2] - liveData[j+2]);
+              score += (dr+dg+db);
+              cnt++;
+            }
+          }
+          score = score / Math.max(1,cnt);
+
+          if(score < bestScore){
+            bestScore = score;
+            best = {dx, dy};
+          }
+        }
+      }
+      return best;
+    }
+
+    function pushSmooth(val){
+      const N = smoothN();
+      rt.q.push(val);
+      while(rt.q.length > N) rt.q.shift();
+      const avg = rt.q.reduce((a,b)=>a+b,0)/rt.q.length;
+      return avg;
+    }
+
+    function computeAndOverlay(baseImg, liveSource, useVideo){
+      // baseImg: HTMLImageElement (Picture1)
+      // liveSource: HTMLVideoElement or HTMLImageElement (Picture2)
+      // useVideo: boolean
+      const stage2 = $("stage2");
+
+      const bW = baseImg.naturalWidth || 1280;
+      const bH = baseImg.naturalHeight || 720;
+      const vW = useVideo ? (liveSource.videoWidth || 1280) : (liveSource.naturalWidth || 1280);
+      const vH = useVideo ? (liveSource.videoHeight || 720) : (liveSource.naturalHeight || 720);
+
+      // choose ROI for stage2 (if enabled and ROI2 active), else full
+      const useROI = roiEnabled() && roiState[2].active;
+      let roiV = {mx:0,my:0,mw:vW,mh:vH};
+      let roiB = {mx:0,my:0,mw:bW,mh:bH};
+
+      if(useROI){
+        const r2 = roiState[2];
+        const roiVid = stageRoiToMediaRoi(stage2, {x:r2.x,y:r2.y,w:r2.w,h:r2.h}, vW, vH);
+        roiV = roiVid;
+        // apply same normalized ROI to base
+        const nx = roiVid.mx / vW;
+        const ny = roiVid.my / vH;
+        const nw = roiVid.mw / vW;
+        const nh = roiVid.mh / vH;
+        roiB = {mx:nx*bW, my:ny*bH, mw:nw*bW, mh:nh*bH};
+      }
+
+      // draw ROI into small canvases
+      const ctxB = rt.cBase.getContext("2d");
+      const ctxL = rt.cLive.getContext("2d");
+      ctxB.clearRect(0,0,rt.w,rt.h);
+      ctxL.clearRect(0,0,rt.w,rt.h);
+
+      ctxB.drawImage(baseImg, roiB.mx, roiB.my, roiB.mw, roiB.mh, 0,0, rt.w,rt.h);
+      ctxL.drawImage(liveSource, roiV.mx, roiV.my, roiV.mw, roiV.mh, 0,0, rt.w,rt.h);
+
+      const idB = ctxB.getImageData(0,0,rt.w,rt.h);
+      const idL = ctxL.getImageData(0,0,rt.w,rt.h);
+
+      // align dx/dy
+      let shift = {dx:0, dy:0};
+      if(alignEnabled()){
+        const maxS = alignRange();
+        shift = findBestShift(idB.data, idL.data, rt.w, rt.h, maxS);
+      }
+      rt.lastAlign = shift;
+      $("alignText").textContent = `dx=${shift.dx} dy=${shift.dy}`;
+
+      // compute diff + overlay mask
+      const thr = thrFromSensitivity(+$("sensRange").value);
+      $("thrText").textContent = thr;
+
+      const d = idB.data;
+      const e = idL.data;
+
+      const out = rt.cDiff.getContext("2d").createImageData(rt.w, rt.h);
+      const o = out.data;
+
+      let changed = 0;
+      const total = rt.w * rt.h;
+
+      // compare with alignment: compare base(x,y) vs live(x-dx,y-dy)
+      for(let y=0; y<rt.h; y++){
+        for(let x=0; x<rt.w; x++){
+          const xi = x - shift.dx;
+          const yi = y - shift.dy;
+
+          const idx = ((y*rt.w + x) << 2);
+          if(xi < 0 || yi < 0 || xi >= rt.w || yi >= rt.h){
+            o[idx+3] = 0;
+            continue;
+          }
+          const jdx = ((yi*rt.w + xi) << 2);
+
+          const dr = Math.abs(d[idx]   - e[jdx]);
+          const dg = Math.abs(d[idx+1] - e[jdx+1]);
+          const db = Math.abs(d[idx+2] - e[jdx+2]);
+          const diff = (dr+dg+db)/3;
+
+          if(diff > thr){
+            changed++;
+            if(heatmapEnabled()){
+              const [r,g,b] = heatColor(diff);
+              o[idx] = r; o[idx+1] = g; o[idx+2] = b; o[idx+3] = 180;
+            }else{
+              // binary cyan
+              o[idx] = 0; o[idx+1] = 229; o[idx+2] = 255; o[idx+3] = 160;
+            }
+          }else{
+            o[idx+3] = 0;
+          }
+        }
+      }
+
+      const diffPct = (changed/total)*100;
+      $("diffText").textContent = diffPct.toFixed(2);
+
+      const sm = pushSmooth(diffPct);
+      $("diffSmoothText").textContent = sm.toFixed(2);
+
+      const failLimit = +$("failRange").value;
+      $("resultText").textContent = (sm > failLimit) ? "FAIL" : "PASS";
+
+      if(overlayEnabled()){
+        drawOverlayToStage2(out);
+      }else{
+        clearOverlay2();
+      }
+
+      return {diffPct, diffSmooth: sm, thr, shift, useROI};
+    }
+
+    function drawOverlayToStage2(maskSmall){
+      const ov = $("ov2");
+      const stage2 = $("stage2");
+      const rr = stage2.getBoundingClientRect();
+      const W = Math.max(1, Math.round(rr.width));
+      const H = Math.max(1, Math.round(rr.height));
+
+      if(ov.width !== W || ov.height !== H){
+        ov.width = W; ov.height = H;
+      }
+      const octx = ov.getContext("2d");
+      octx.clearRect(0,0,W,H);
+
+      const tmp = document.createElement("canvas");
+      tmp.width = rt.w; tmp.height = rt.h;
+      tmp.getContext("2d").putImageData(maskSmall,0,0);
+
+      const useROI = roiEnabled() && roiState[2].active;
+
+      octx.save();
+      octx.globalCompositeOperation = "lighter";
+      octx.imageSmoothingEnabled = false;
+
+      if(useROI){
+        const r2 = roiState[2];
+        octx.drawImage(tmp, r2.x, r2.y, r2.w, r2.h);
+
+        // neon stroke + glow
+        octx.strokeStyle = "rgba(0,229,255,.85)";
+        octx.lineWidth = 2;
+        octx.shadowColor = "rgba(0,229,255,.55)";
+        octx.shadowBlur = 18;
+        octx.strokeRect(r2.x+1, r2.y+1, r2.w-2, r2.h-2);
+      }else{
+        octx.drawImage(tmp, 0,0, W,H);
+      }
+      octx.restore();
+
+      // Iron-man scanline in overlay
+      const t = (Date.now()/1000);
+      const y = (Math.sin(t*2.2)*0.5+0.5) * H;
+      octx.save();
+      octx.globalCompositeOperation = "lighter";
+      octx.fillStyle = "rgba(0,229,255,.10)";
+      octx.fillRect(0, y-6, W, 12);
+      octx.restore();
+    }
+
+    // ===========================
+    //  Capture Compare (button)
+    // ===========================
+    function compareCaptureOnce(){
+      const base = $("img1");
+      if(!base.src){
+        alert("Picture 1 ต้องมีภาพฐานก่อน (Upload/Capture)");
+        return;
+      }
+      const mode = isRealtimeMode();
+      if(mode){
+        alert("ตอนนี้อยู่ Realtime Mode อยู่แล้ว (ดู overlay ได้ทันที)");
+        return;
+      }
+
+      // target source: prefer img2 if exists, else video2 if live
+      const img2 = $("img2");
+      const vid2 = $("vid2");
+      if(img2.src){
+        computeAndOverlay(base, img2, false);
+      }else if(streams[2] && vid2.style.display !== "none"){
+        computeAndOverlay(base, vid2, true);
+      }else{
+        alert("Picture 2 ยังไม่มีภาพ/กล้อง (Upload/Capture/Open Cam)");
+      }
+    }
+
+    // ===========================
+    //  Realtime loop
+    // ===========================
+    function startRealtimeCompare(){
+      if(rt.on) return;
+      rt.on = true;
+      rt.q = [];
+      rt.fps = {t0:performance.now(), frames:0};
+      loopRealtime();
+    }
+    function stopRealtimeCompare(){
+      rt.on = false;
+      if(rt.raf) cancelAnimationFrame(rt.raf);
+      rt.raf = null;
+      rt.q = [];
+      clearOverlay2();
+    }
+
+    function updateFPS(){
+      rt.fps.frames++;
+      const t = performance.now();
+      const dt = (t - rt.fps.t0)/1000;
+      if(dt >= 1){
+        const fps = rt.fps.frames/dt;
+        $("fpsText").textContent = fps.toFixed(0);
+        rt.fps.t0 = t;
+        rt.fps.frames = 0;
+      }
+    }
+
+    function loopRealtime(){
+      if(!rt.on){ stopRealtimeCompare(); return; }
+
+      updateFPS();
+
+      const base = $("img1");
+      if(!base.src){
+        $("resultText").textContent = "NO BASE IMG1";
+        $("diffText").textContent = "--";
+        $("diffSmoothText").textContent = "--";
+        rt.raf = requestAnimationFrame(loopRealtime);
+        return;
+      }
+
+      const vid2 = $("vid2");
+      if(!streams[2] || vid2.style.display==="none"){
+        $("resultText").textContent = "OPEN CAM P2";
+        $("diffText").textContent = "--";
+        $("diffSmoothText").textContent = "--";
+        rt.raf = requestAnimationFrame(loopRealtime);
+        return;
+      }
+
+      computeAndOverlay(base, vid2, true);
+
+      rt.raf = requestAnimationFrame(loopRealtime);
+    }
+
+    // ===========================
+    //  Export Report (PNG)
+    // ===========================
+    async function getP2SnapshotDataURL(){
+      // prefer img2 if user captured/uploaded, else snapshot from video2
+      const img2 = $("img2");
+      if(img2.src) return img2.src;
+
+      const vid2 = $("vid2");
+      if(streams[2] && vid2.style.display !== "none"){
+        const c = document.createElement("canvas");
+        c.width = vid2.videoWidth || 1280;
+        c.height = vid2.videoHeight || 720;
+        c.getContext("2d").drawImage(vid2,0,0,c.width,c.height);
+        return c.toDataURL("image/png");
+      }
+      return "";
+    }
+
+    function drawRoiRectOnCanvas(ctx, x,y,w,h, color){
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+      ctx.strokeRect(x,y,w,h);
+      ctx.restore();
+    }
+
+    async function exportReport(){
+      const base = $("img1");
+      if(!base.src){
+        alert("Picture 1 ต้องมีภาพฐานก่อน");
+        return;
+      }
+      const p2url = await getP2SnapshotDataURL();
+      if(!p2url){
+        alert("Picture 2 ไม่มีภาพ/กล้อง");
+        return;
+      }
+
+      // make report canvas
+      const W = 1600, H = 900;
+      const c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      const ctx = c.getContext("2d");
+
+      // background
+      ctx.fillStyle = "#02040c";
+      ctx.fillRect(0,0,W,H);
+
+      // header bar
+      ctx.fillStyle = "rgba(0,229,255,.10)";
+      ctx.fillRect(0,0,W,90);
+      ctx.strokeStyle = "rgba(0,229,255,.35)";
+      ctx.strokeRect(18,18,W-36,54);
+
+      ctx.fillStyle = "rgba(234,246,255,.92)";
+      ctx.font = "bold 26px ui-monospace, Menlo, Consolas";
+      ctx.fillText("SMART EYE HUD · INSPECTION REPORT", 40, 54);
+
+      ctx.fillStyle = "rgba(234,246,255,.70)";
+      ctx.font = "16px ui-monospace, Menlo, Consolas";
+      ctx.fillText(`Timestamp: ${nowStamp()}`, 40, 78);
+
+      // metrics
+      const diff = $("diffText").textContent;
+      const diffS = $("diffSmoothText").textContent;
+      const res = $("resultText").textContent;
+      const thr = $("thrText").textContent;
+      const align = $("alignText").textContent;
+      ctx.fillStyle = "rgba(234,246,255,.78)";
+      ctx.fillText(`Diff: ${diff}% | Smooth: ${diffS}% | Result: ${res} | Thr: ${thr} | ${align}`, 540, 78);
+
+      // load images
+      const imgBase = await loadImage(base.src);
+      const imgP2 = await loadImage(p2url);
+
+      // layout
+      const pad = 40;
+      const boxW = (W - pad*3) / 2;
+      const boxH = 660;
+      const y0 = 120;
+
+      // draw panels
+      ctx.strokeStyle = "rgba(0,229,255,.25)";
+      ctx.strokeRect(pad, y0, boxW, boxH);
+      ctx.strokeRect(pad*2 + boxW, y0, boxW, boxH);
+
+      ctx.fillStyle = "rgba(234,246,255,.70)";
+      ctx.font = "bold 18px ui-monospace, Menlo, Consolas";
+      ctx.fillText("PICTURE 1 (BASE)", pad, y0-12);
+      ctx.fillText("PICTURE 2 (TARGET)", pad*2 + boxW, y0-12);
+
+      // draw images contain-fit
+      drawContain(ctx, imgBase, pad, y0, boxW, boxH);
+      drawContain(ctx, imgP2,   pad*2 + boxW, y0, boxW, boxH);
+
+      // ROI in report: use normalized ROI (from stage) then map to report box area
+      const r1n = normROI(1);
+      const r2n = normROI(2);
+      if(r1n){
+        drawRoiRectOnCanvas(ctx,
+          pad + r1n.nx*boxW,
+          y0  + r1n.ny*boxH,
+          r1n.nw*boxW,
+          r1n.nh*boxH,
+          "rgba(0,229,255,.95)"
+        );
+      }
+      if(r2n){
+        drawRoiRectOnCanvas(ctx,
+          (pad*2 + boxW) + r2n.nx*boxW,
+          y0 + r2n.ny*boxH,
+          r2n.nw*boxW,
+          r2n.nh*boxH,
+          "rgba(255,230,0,.95)"
+        );
+      }
+
+      // overlay snapshot: take current ov2 and draw over Picture2
+      if(overlayEnabled()){
+        const ov2 = $("ov2");
+        // copy overlay at current display resolution into image
+        const ovData = ov2.toDataURL("image/png");
+        const ovImg = await loadImage(ovData);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.95;
+        ctx.drawImage(ovImg, pad*2 + boxW, y0, boxW, boxH);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      // footer
+      ctx.fillStyle = "rgba(234,246,255,.55)";
+      ctx.font = "14px ui-monospace, Menlo, Consolas";
+      ctx.fillText("Generated by SmartEye HUD (HTML) · ROI preset stored in browser localStorage", 40, 850);
+
+      // download
+      const outUrl = c.toDataURL("image/png");
+      downloadDataURL(outUrl, `SmartEye_Report_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.png`);
+    }
+
+    function drawContain(ctx, img, x,y,w,h){
+      const arI = img.width / img.height;
+      const arB = w / h;
+      let dw, dh, dx, dy;
+      if(arI > arB){
+        dw = w;
+        dh = w / arI;
+        dx = x;
+        dy = y + (h-dh)/2;
+      }else{
+        dh = h;
+        dw = h * arI;
+        dy = y;
+        dx = x + (w-dw)/2;
+      }
+      ctx.drawImage(img, dx,dy,dw,dh);
+    }
+
+    function loadImage(src){
+      return new Promise((resolve, reject)=>{
+        const im = new Image();
+        im.onload = ()=>resolve(im);
+        im.onerror = reject;
+        im.crossOrigin = "anonymous";
+        im.src = src;
+      });
+    }
+
+    function downloadDataURL(dataURL, filename){
+      const a = document.createElement("a");
+      a.href = dataURL;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // ===========================
+    //  UI bindings
+    // ===========================
     const failRange = $("failRange");
-    const roiRange  = $("roiRange");
     const sensRange = $("sensRange");
+    const smoothRange = $("smoothRange");
+    const alignR = $("alignRange");
 
     function syncLabels(){
       $("failVal").textContent = `${(+failRange.value).toFixed(1)}%`;
-      $("roiVal").textContent  = `${roiRange.value}%`;
       $("sensVal").textContent = `${sensRange.value}%`;
+      $("smoothVal").textContent = `${smoothRange.value}`;
+      $("alignRangeVal").textContent = `${alignR.value}`;
       $("thrText").textContent = `${thrFromSensitivity(+sensRange.value)}`;
     }
-    [failRange, roiRange, sensRange].forEach(r => r.addEventListener("input", syncLabels));
+    [failRange, sensRange, smoothRange, alignR].forEach(r => r.addEventListener("input", syncLabels));
     syncLabels();
 
-    // ===== Compare demo (placeholder) =====
-    $("btnCompare").addEventListener("click", ()=>{
-      const diff = (Math.random()*18).toFixed(2);
-      $("diffText").textContent = diff;
-      const failLimit = +failRange.value;
-      $("resultText").textContent = (+diff > failLimit) ? "FAIL" : "PASS";
-    });
+    // Compare / Export / Reset
+    $("btnCompare").addEventListener("click", compareCaptureOnce);
+    $("btnExport").addEventListener("click", exportReport);
 
     $("btnReset").addEventListener("click", ()=>{
       failRange.value = 10;
-      roiRange.value = 40;
       sensRange.value = 60;
+      smoothRange.value = 8;
+      alignR.value = 8;
+
       $("toggleROI").checked = true;
+      $("toggleLockROI").checked = false;
       $("toggleOverlay").checked = true;
+      $("toggleHeatmap").checked = true;
+      $("toggleAlign").checked = true;
 
       $("diffText").textContent = "--";
+      $("diffSmoothText").textContent = "--";
       $("resultText").textContent = "-";
+      $("alignText").textContent = "dx=0 dy=0";
+      rt.q = [];
+      clearOverlay2();
       syncLabels();
 
       [1,2].forEach(k=>{
@@ -728,7 +1497,47 @@
       applyRoiCursor();
     });
 
-    // ===== Wire buttons =====
+    // Mode change
+    document.querySelectorAll('input[name="mode"]').forEach(r=>{
+      r.addEventListener("change", ()=>{
+        setModeText();
+        if(isRealtimeMode()){
+          startRealtimeCompare();
+        }else{
+          stopRealtimeCompare();
+        }
+      });
+    });
+    setModeText();
+
+    // ROI switches
+    document.querySelectorAll('input[name="roiMode"]').forEach(r=>{
+      r.addEventListener("change", ()=>{
+        applyRoiCursor();
+      });
+    });
+    $("toggleROI").addEventListener("change", ()=>{
+      [1,2].forEach(k=>setROIBox(k));
+      applyRoiCursor();
+    });
+    $("toggleLockROI").addEventListener("change", ()=>{
+      applyRoiCursor();
+    });
+
+    // Copy ROI
+    $("btnCopyROI12").addEventListener("click", copyRoiSize12);
+
+    // Preset buttons
+    $("btnPresetSave").addEventListener("click", savePreset);
+    $("btnPresetLoad").addEventListener("click", loadPreset);
+    $("btnPresetDel").addEventListener("click", delPreset);
+
+    // Overlay toggle => clear when off
+    $("toggleOverlay").addEventListener("change", ()=>{
+      if(!overlayEnabled()) clearOverlay2();
+    });
+
+    // Camera buttons
     $("openCam1").addEventListener("click", ()=>openCamera(1));
     $("openCam2").addEventListener("click", ()=>openCamera(2));
     $("cap1").addEventListener("click", ()=>captureFrame(1));
@@ -736,20 +1545,16 @@
     $("up1").addEventListener("change", (e)=>loadLocalImage(e.target.files?.[0], 1));
     $("up2").addEventListener("change", (e)=>loadLocalImage(e.target.files?.[0], 2));
 
-    // ROI mode changes
-    document.querySelectorAll('input[name="roiMode"]').forEach(r=>{
-      r.addEventListener("change", ()=>applyRoiCursor());
-    });
-    $("toggleROI").addEventListener("change", ()=>{
-      [1,2].forEach(k=>setROIBox(k));
-      applyRoiCursor();
-    });
-
+    // Attach ROI
     attachROI("stage1", 1);
     attachROI("stage2", 2);
     applyRoiCursor();
 
-    // ===== Permission check (best-effort) =====
+    // keep overlay canvas in sync on resize
+    const ro = new ResizeObserver(()=>clearOverlay2());
+    ro.observe($("stage2"));
+
+    // Permission check (best-effort)
     async function checkPermission(){
       try{
         if(!navigator.permissions){
@@ -771,10 +1576,12 @@
     }
     checkPermission();
 
+    // Auto start realtime if already selected
+    if(isRealtimeMode()) startRealtimeCompare();
+
     // stop camera on exit
     window.addEventListener("beforeunload", ()=>{
-      stopCamera(1);
-      stopCamera(2);
+      stopCamera(1); stopCamera(2);
     });
   </script>
 </body>
