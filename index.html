@@ -3,200 +3,373 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>SmartEye AI | Industrial Print Inspection</title>
+  <title>SmartEye HUD | JARVIS Industrial Print Inspection</title>
 
-  <!-- Tailwind CDN (สำหรับทำ UI เร็วและสวย) -->
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* ---- Neon / Glass Theme ---- */
     :root{
-      --bg0:#050b1a; --bg1:#070d23; --panel:#0b1430; --card:#0f1e45;
-      --txt:#eaf1ff; --dim:#7d8db8;
-      --blue:#2f81ff; --green:#38ff9c; --red:#ff3b3b; --line:#1d2a55;
+      --bg0:#02040c;
+      --bg1:#050b1a;
+      --hud:#00e5ff;
+      --hud2:#5cffc9;
+      --warn:#ff3b3b;
+      --txt:#eaf6ff;
+      --dim:rgba(234,246,255,.55);
+      --panel: rgba(8,18,46,.45);
+      --stroke: rgba(0,229,255,.18);
+      --stroke2: rgba(92,255,201,.14);
+      --shadow: rgba(0,0,0,.55);
     }
-    body{
-      background:
-        radial-gradient(1200px 600px at 20% 10%, rgba(47,129,255,.18), transparent 60%),
-        radial-gradient(900px 500px at 80% 30%, rgba(56,255,156,.10), transparent 55%),
-        radial-gradient(900px 500px at 70% 85%, rgba(255,59,59,.10), transparent 55%),
-        linear-gradient(180deg, var(--bg1), var(--bg0));
-      color: var(--txt);
-    }
-    .glass{
-      background: rgba(15, 30, 69, .55);
-      border: 1px solid rgba(255,255,255,.08);
-      box-shadow: 0 20px 60px rgba(0,0,0,.45);
-      backdrop-filter: blur(10px);
-    }
-    .glow-blue{ box-shadow: 0 0 0 1px rgba(47,129,255,.25), 0 0 28px rgba(47,129,255,.18); }
-    .glow-green{ box-shadow: 0 0 0 1px rgba(56,255,156,.20), 0 0 28px rgba(56,255,156,.16); }
-    .glow-red{ box-shadow: 0 0 0 1px rgba(255,59,59,.20), 0 0 28px rgba(255,59,59,.14); }
 
-    /* ---- Range slider styling ---- */
+    body{
+      color: var(--txt);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(0,229,255,.16), transparent 60%),
+        radial-gradient(900px 600px at 85% 25%, rgba(92,255,201,.10), transparent 55%),
+        radial-gradient(900px 600px at 70% 85%, rgba(255,59,59,.08), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg0));
+      position: relative;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* grid overlay */
+    body::before{
+      content:"";
+      position: fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(rgba(0,229,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.06) 1px, transparent 1px);
+      background-size: 42px 42px;
+      opacity:.22;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+
+    /* scanline overlay */
+    body::after{
+      content:"";
+      position: fixed;
+      inset:-30%;
+      pointer-events:none;
+      background: linear-gradient(180deg, transparent, rgba(0,229,255,.10), transparent);
+      animation: scan 7s linear infinite;
+      opacity:.35;
+      mix-blend-mode: screen;
+      z-index: 0;
+    }
+    @keyframes scan{
+      0%{ transform: translateY(-40%); }
+      100%{ transform: translateY(40%); }
+    }
+
+    /* glass HUD panel */
+    .hud-panel{
+      background: var(--panel);
+      border: 1px solid rgba(0,229,255,.18);
+      box-shadow: 0 24px 70px var(--shadow), 0 0 0 1px rgba(92,255,201,.06) inset;
+      backdrop-filter: blur(10px);
+      border-radius: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hud-title{
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: rgba(234,246,255,.85);
+    }
+
+    .hud-glow{
+      box-shadow:
+        0 0 0 1px rgba(0,229,255,.25),
+        0 0 32px rgba(0,229,255,.16),
+        0 0 58px rgba(92,255,201,.08);
+    }
+
+    .hud-corners{
+      position: relative;
+    }
+    .hud-corners:before,
+    .hud-corners:after{
+      content:"";
+      position:absolute;
+      inset:10px;
+      border: 1px dashed rgba(0,229,255,.22);
+      border-radius: 16px;
+      pointer-events:none;
+      opacity:.55;
+    }
+    .hud-corners:after{
+      inset:18px;
+      border-color: rgba(92,255,201,.12);
+      opacity:.45;
+    }
+
+    .hud-mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: .08em;
+      color: var(--dim);
+    }
+
+    .btn-jarvis{
+      background: linear-gradient(180deg, rgba(0,229,255,.22), rgba(0,229,255,.06));
+      border: 1px solid rgba(0,229,255,.32);
+      color: rgba(234,246,255,.92);
+      font-weight: 800;
+      border-radius: 14px;
+      padding: 10px 14px;
+      transition: .15s;
+      box-shadow: 0 12px 28px rgba(0,0,0,.35), 0 0 22px rgba(0,229,255,.12);
+    }
+    .btn-jarvis:hover{ transform: translateY(-1px); filter: brightness(1.15); }
+    .btn-jarvis.warn{
+      border-color: rgba(255,59,59,.4);
+      background: linear-gradient(180deg, rgba(255,59,59,.20), rgba(255,59,59,.06));
+    }
+
     input[type="range"]{
       -webkit-appearance: none; appearance:none;
       height: 6px; border-radius: 999px;
-      background: linear-gradient(90deg, rgba(47,129,255,.9), rgba(56,255,156,.75));
+      background: linear-gradient(90deg, rgba(0,229,255,.85), rgba(92,255,201,.70));
       outline: none;
     }
     input[type="range"]::-webkit-slider-thumb{
       -webkit-appearance:none; appearance:none;
       width: 18px; height: 18px; border-radius: 999px;
-      background: rgba(234,241,255,.95);
-      border: 2px solid rgba(47,129,255,.8);
+      background: rgba(234,246,255,.95);
+      border: 2px solid rgba(0,229,255,.8);
       box-shadow: 0 8px 18px rgba(0,0,0,.35);
       cursor: pointer;
     }
 
-    /* ---- Toggle ---- */
     .toggle{
       width: 42px; height: 24px; border-radius: 999px;
-      background: rgba(125,141,184,.35);
+      background: rgba(234,246,255,.15);
       position: relative; transition: .2s;
       border: 1px solid rgba(255,255,255,.10);
     }
     .toggle::after{
       content:""; position:absolute; top: 3px; left: 3px;
       width: 18px; height: 18px; border-radius: 999px;
-      background: rgba(234,241,255,.95);
+      background: rgba(234,246,255,.95);
       transition: .2s;
     }
     input:checked + .toggle{
-      background: rgba(47,129,255,.55);
-      box-shadow: 0 0 20px rgba(47,129,255,.22);
+      background: rgba(0,229,255,.35);
+      box-shadow: 0 0 20px rgba(0,229,255,.22);
     }
     input:checked + .toggle::after{ left: 21px; }
 
-    /* ---- Dropzone ---- */
     .dropzone{
-      border: 1px dashed rgba(234,241,255,.20);
-      background: rgba(8,18,46,.65);
+      border: 1px dashed rgba(234,246,255,.22);
+      background: rgba(8,18,46,.55);
+      border-radius: 18px;
     }
 
-    /* ---- Subtle animated lines ---- */
-    .scanline{
-      background: linear-gradient(180deg, transparent, rgba(47,129,255,.10), transparent);
-      animation: scan 6s linear infinite;
+    /* HUD ring (header) */
+    .hud-ring{
+      width: 170px;
+      height: 170px;
+      border-radius: 999px;
+      position: relative;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(0,229,255,.20), transparent 55%),
+        conic-gradient(from 210deg,
+          rgba(0,229,255,.0) 0deg,
+          rgba(0,229,255,.85) 55deg,
+          rgba(92,255,201,.55) 120deg,
+          rgba(0,229,255,.0) 180deg,
+          rgba(0,229,255,.40) 270deg,
+          rgba(0,229,255,.0) 360deg);
+      box-shadow: 0 0 0 1px rgba(0,229,255,.25), 0 0 35px rgba(0,229,255,.12);
+      overflow: hidden;
     }
-    @keyframes scan{
-      0%{ transform: translateY(-120%); }
-      100%{ transform: translateY(120%); }
+    .hud-ring:before{
+      content:"";
+      position:absolute;
+      inset:16px;
+      border-radius: 999px;
+      border: 1px solid rgba(0,229,255,.28);
     }
+    .hud-ring:after{
+      content:"";
+      position:absolute;
+      inset:38px;
+      border-radius: 999px;
+      border: 1px dashed rgba(92,255,201,.18);
+      opacity:.8;
+    }
+    .hud-ring .spin{
+      position:absolute;
+      inset:-10px;
+      border-radius: 999px;
+      border: 2px solid rgba(0,229,255,.22);
+      border-left-color: transparent;
+      border-right-color: transparent;
+      animation: spin 6s linear infinite;
+      opacity:.6;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg);} }
+
+    /* stage (video/img/roi) */
+    .media-stage{
+      position: relative;
+      width: 100%;
+      height: 100%;
+      user-select: none;
+    }
+    .media-stage video,
+    .media-stage img{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit: contain;
+    }
+    .media-stage video{ display:none; }
+    .roi-box{
+      position:absolute;
+      border: 2px solid rgba(0,255,255,.9);
+      border-radius: 10px;
+      background: rgba(0,255,255,.08);
+      display:none;
+      cursor: move;
+      box-shadow: 0 0 24px rgba(0,229,255,.18);
+    }
+    .roi-box.yellow{
+      border-color: rgba(255,230,0,.9);
+      background: rgba(255,230,0,.08);
+      box-shadow: 0 0 24px rgba(255,230,0,.12);
+    }
+    .roi-hint{
+      position:absolute;
+      bottom: 10px;
+      left: 12px;
+      font-size: 12px;
+      color: rgba(234,246,255,.65);
+      background: rgba(0,0,0,.25);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.10);
+      pointer-events:none;
+    }
+    .draw-cursor{ cursor: crosshair !important; }
   </style>
 </head>
 
-<body class="min-h-screen">
-  <!-- TOP BAR -->
-  <header class="w-full px-6 py-4">
-    <div class="glass rounded-2xl px-5 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 grid place-items-center glow-blue">
-          <span class="text-xl">👁️</span>
+<body>
+  <!-- HEADER -->
+  <header class="px-6 py-4">
+    <div class="hud-panel hud-glow hud-corners px-5 py-4 flex items-center justify-between gap-6">
+      <div class="flex items-center gap-4">
+        <div class="hud-ring">
+          <div class="spin"></div>
         </div>
         <div>
-          <div class="text-lg font-semibold tracking-wide">SmartEye AI</div>
-          <div class="text-xs text-[color:var(--dim)]">Industrial Print Inspection Dashboard</div>
+          <div class="text-xl font-extrabold tracking-wide">SMART EYE · HUD</div>
+          <div class="hud-mono text-xs mt-1">SYSTEM: ONLINE · SECURE LINK: OK · FPS: 30</div>
+          <div class="hud-mono text-xs mt-1">INSPECTOR: PRINT · MODEL: v0.2 · PIPELINE: READY</div>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <div id="camStatusDot" class="w-2.5 h-2.5 rounded-full bg-[color:var(--green)] glow-green"></div>
-        <div id="camStatus" class="text-sm font-semibold text-[color:var(--green)]">Camera Status : FREE</div>
+
+      <div class="text-right">
+        <div class="hud-title text-xs">CAMERA STATUS</div>
+        <div id="camStatus" class="text-sm font-extrabold text-cyan-200">FREE</div>
+        <div class="hud-mono text-xs mt-1">NODE: INSPECT-01 · MODE: CAPTURE</div>
+        <div class="hud-mono text-xs mt-1" id="permHint">PERMISSION: UNKNOWN</div>
       </div>
     </div>
   </header>
 
-  <!-- BODY -->
+  <!-- MAIN -->
   <main class="px-6 pb-8">
     <div class="grid grid-cols-12 gap-5">
+
       <!-- LEFT CONTROL -->
       <aside class="col-span-12 lg:col-span-4 xl:col-span-3">
-        <div class="glass rounded-2xl p-4">
+        <div class="hud-panel hud-corners p-4">
           <div class="flex items-center justify-between mb-3">
-            <div class="text-sm font-bold tracking-widest text-white/80">CONTROL</div>
-            <div class="text-xs text-white/40">v0.1 UI Prototype</div>
+            <div class="hud-title text-xs">CONTROL MATRIX</div>
+            <div class="hud-mono text-xs">v1.0 JARVIS THEME</div>
           </div>
 
-          <!-- Buttons -->
-          <button id="btnCompare"
-            class="w-full rounded-xl py-3 font-bold text-white bg-[color:var(--blue)] hover:brightness-110 transition glow-blue">
-            🔍 COMPARE
-          </button>
-          <button id="btnReset"
-            class="w-full mt-3 rounded-xl py-2.5 font-semibold text-[color:var(--txt)] bg-[#1b2a55] hover:brightness-110 transition">
-            🧹 Clear / Default
-          </button>
+          <button id="btnCompare" class="btn-jarvis w-full">🔍 ANALYZE / COMPARE</button>
+          <button id="btnReset" class="btn-jarvis w-full mt-3 warn">🧹 RESET</button>
 
-          <!-- Result -->
-          <div class="mt-5 space-y-2">
-            <div class="text-[color:var(--blue)] text-xl font-extrabold" id="diffText">Difference : -- %</div>
-            <div class="text-xl font-extrabold" id="resultText">RESULT : -</div>
-            <div class="text-xs font-bold text-[color:var(--dim)]" id="thrText">thr=--</div>
+          <div class="mt-5">
+            <div class="hud-title text-xs mb-2">DIAGNOSTICS</div>
+            <div class="hud-mono text-xs">DIFF: <span id="diffText">--</span>%</div>
+            <div class="hud-mono text-xs mt-1">RESULT: <span id="resultText">-</span></div>
+            <div class="hud-mono text-xs mt-1">THR: <span id="thrText">--</span></div>
           </div>
 
-          <!-- Mode -->
-          <div class="mt-5 glass rounded-2xl p-4">
-            <div class="font-bold mb-3">Mode</div>
+          <div class="mt-5 hud-panel p-4">
+            <div class="hud-title text-xs mb-3">MODE</div>
             <label class="flex items-center gap-3 cursor-pointer py-1">
-              <input type="radio" name="mode" value="capture" checked class="accent-blue-500"/>
+              <input type="radio" name="mode" value="capture" checked class="accent-cyan-300"/>
               <span class="text-sm">Compare Capture</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer py-1">
-              <input type="radio" name="mode" value="realtime" class="accent-blue-500"/>
+              <input type="radio" name="mode" value="realtime" class="accent-cyan-300"/>
               <span class="text-sm">Compare Realtime (Live on Picture 2)</span>
             </label>
           </div>
 
-          <!-- ROI Mode -->
-          <div class="mt-4 glass rounded-2xl p-4">
-            <div class="font-bold mb-3">ROI Mode</div>
+          <div class="mt-4 hud-panel p-4">
+            <div class="hud-title text-xs mb-3">ROI CONTROL</div>
             <label class="flex items-center gap-3 cursor-pointer py-1">
-              <input type="radio" name="roiMode" value="auto" checked class="accent-blue-500"/>
+              <input type="radio" name="roiMode" value="auto" checked class="accent-cyan-300"/>
               <span class="text-sm">Auto ROI (Program)</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer py-1">
-              <input type="radio" name="roiMode" value="custom" class="accent-blue-500"/>
-              <span class="text-sm">Custom ROI (Draw/Move)</span>
+              <input type="radio" name="roiMode" value="custom" class="accent-cyan-300"/>
+              <span class="text-sm">Custom ROI (Drag to select)</span>
             </label>
-            <div class="text-xs text-[color:var(--dim)] mt-3 leading-relaxed">
-              Tip: ในเวอร์ชันต่อจริง คุณจะลากสร้าง ROI ได้บนภาพ และย้ายกรอบที่ Picture2 ได้เหมือน Tkinter
+
+            <div class="mt-3 flex items-center justify-between">
+              <div class="text-sm font-semibold">Enable ROI</div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleROI" type="checkbox" checked class="hidden"/>
+                <span class="toggle"></span>
+              </label>
             </div>
+
+            <div class="mt-3 hud-mono text-xs">ROI1: <span id="roi1Text" class="text-white/90">-</span></div>
+            <div class="mt-1 hud-mono text-xs">ROI2: <span id="roi2Text" class="text-white/90">-</span></div>
+            <div class="mt-2 hud-mono text-[11px]">Tip: Custom ROI → ลากเพื่อสร้างกรอบ • ลากกรอบเพื่อย้าย</div>
           </div>
 
-          <!-- Inspection Settings -->
-          <div class="mt-4 glass rounded-2xl p-4 space-y-4">
-            <div class="font-bold">Inspection Settings</div>
+          <div class="mt-4 hud-panel p-4 space-y-4">
+            <div class="hud-title text-xs">INSPECTION SETTINGS</div>
 
             <div>
               <div class="flex items-center justify-between">
-                <div class="text-xs text-[color:var(--dim)] font-semibold">FAIL Limit (%)</div>
-                <div class="text-xs font-bold" id="failVal">10.0%</div>
+                <div class="hud-mono text-[11px]">FAIL LIMIT</div>
+                <div class="hud-mono text-[11px] text-white/90" id="failVal">10.0%</div>
               </div>
               <input id="failRange" type="range" min="1" max="60" value="10" class="w-full mt-2"/>
             </div>
 
             <div>
               <div class="flex items-center justify-between">
-                <div class="text-xs text-[color:var(--dim)] font-semibold">ROI Size (Auto)</div>
-                <div class="text-xs font-bold" id="roiVal">40%</div>
+                <div class="hud-mono text-[11px]">AUTO ROI SIZE</div>
+                <div class="hud-mono text-[11px] text-white/90" id="roiVal">40%</div>
               </div>
               <input id="roiRange" type="range" min="20" max="90" value="40" class="w-full mt-2"/>
             </div>
 
             <div>
               <div class="flex items-center justify-between">
-                <div class="text-xs text-[color:var(--dim)] font-semibold">Sensitivity</div>
-                <div class="text-xs font-bold" id="sensVal">60%</div>
+                <div class="hud-mono text-[11px]">SENSITIVITY</div>
+                <div class="hud-mono text-[11px] text-white/90" id="sensVal">60%</div>
               </div>
               <input id="sensRange" type="range" min="0" max="100" value="60" class="w-full mt-2"/>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div class="text-sm font-semibold">Enable ROI</div>
-              <label class="flex items-center gap-3 cursor-pointer">
-                <input id="toggleROI" type="checkbox" checked class="hidden"/>
-                <span class="toggle"></span>
-              </label>
             </div>
 
             <div class="flex items-center justify-between">
@@ -208,27 +381,9 @@
             </div>
           </div>
 
-          <!-- Image Adjustment -->
-          <div class="mt-4 glass rounded-2xl p-4 space-y-4">
-            <div class="font-bold">Image Adjustment</div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="glass rounded-xl p-3">
-                <div class="font-semibold mb-2">Picture 1</div>
-                <div class="text-xs text-[color:var(--dim)]">Brightness <span id="p1B">0%</span></div>
-                <input id="p1Bri" type="range" min="-100" max="100" value="0" class="w-full mt-2"/>
-                <div class="text-xs text-[color:var(--dim)] mt-3">Contrast <span id="p1C">100%</span></div>
-                <input id="p1Con" type="range" min="50" max="250" value="100" class="w-full mt-2"/>
-              </div>
-
-              <div class="glass rounded-xl p-3">
-                <div class="font-semibold mb-2">Picture 2</div>
-                <div class="text-xs text-[color:var(--dim)]">Brightness <span id="p2B">0%</span></div>
-                <input id="p2Bri" type="range" min="-100" max="100" value="0" class="w-full mt-2"/>
-                <div class="text-xs text-[color:var(--dim)] mt-3">Contrast <span id="p2C">100%</span></div>
-                <input id="p2Con" type="range" min="50" max="250" value="100" class="w-full mt-2"/>
-              </div>
-            </div>
+          <div class="mt-4 hud-panel p-4">
+            <div class="hud-title text-xs mb-2">PERMISSION CHECK</div>
+            <div class="hud-mono text-xs" id="permText">Camera: checking...</div>
           </div>
         </div>
       </aside>
@@ -236,115 +391,304 @@
       <!-- RIGHT IMAGES -->
       <section class="col-span-12 lg:col-span-8 xl:col-span-9">
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
           <!-- Picture 1 -->
-          <div class="glass rounded-2xl p-4 relative overflow-hidden">
-            <div class="absolute inset-0 scanline pointer-events-none opacity-40"></div>
+          <div class="hud-panel hud-corners p-4">
             <div class="flex items-center justify-between mb-3">
-              <div class="text-base font-bold">Picture 1</div>
-              <div class="text-xs text-white/40">VIEW 640×420</div>
+              <div class="hud-title text-xs">PICTURE 1</div>
+              <div class="hud-mono text-xs">VIEW 640×420</div>
             </div>
 
-            <div class="dropzone rounded-2xl p-3 relative">
-              <div class="aspect-[640/420] w-full rounded-xl overflow-hidden bg-[#08122e] relative">
-                <img id="img1" class="w-full h-full object-contain" alt="" />
-                <div id="roi1" class="hidden absolute border-2 border-cyan-300/90 rounded-md"></div>
+            <div class="dropzone p-3">
+              <div class="aspect-[640/420] w-full rounded-xl overflow-hidden bg-[#07102a] relative">
+                <div id="stage1" class="media-stage">
+                  <video id="vid1" playsinline autoplay muted></video>
+                  <img id="img1" alt="" />
+                  <div id="roi1" class="roi-box"></div>
+                  <div class="roi-hint">Custom ROI: ลากเพื่อเลือก • ลากกรอบเพื่อย้าย</div>
+                </div>
               </div>
 
               <div class="mt-3 grid grid-cols-3 gap-2">
-                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition glow-blue"
-                        onclick="fakeCam(1)">📷 Open Camera</button>
-                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition"
-                        onclick="fakeCapture(1)">📸 Capture</button>
-                <label class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition text-center cursor-pointer">
-                  📂 Upload
-                  <input type="file" accept="image/*" class="hidden" onchange="loadLocalImage(event, 1)" />
+                <button id="openCam1" class="btn-jarvis w-full">📷 OPEN</button>
+                <button id="cap1" class="btn-jarvis w-full">📸 CAPTURE</button>
+                <label class="btn-jarvis w-full text-center cursor-pointer">
+                  📂 UPLOAD
+                  <input type="file" accept="image/*" class="hidden" id="up1" />
                 </label>
               </div>
             </div>
           </div>
 
           <!-- Picture 2 -->
-          <div class="glass rounded-2xl p-4 relative overflow-hidden">
-            <div class="absolute inset-0 scanline pointer-events-none opacity-40"></div>
+          <div class="hud-panel hud-corners p-4">
             <div class="flex items-center justify-between mb-3">
-              <div class="text-base font-bold">Picture 2</div>
-              <div class="text-xs text-white/40">VIEW 640×420</div>
+              <div class="hud-title text-xs">PICTURE 2</div>
+              <div class="hud-mono text-xs">VIEW 640×420</div>
             </div>
 
-            <div class="dropzone rounded-2xl p-3 relative">
-              <div class="aspect-[640/420] w-full rounded-xl overflow-hidden bg-[#08122e] relative">
-                <img id="img2" class="w-full h-full object-contain" alt="" />
-                <div id="roi2" class="hidden absolute border-2 border-yellow-300/90 rounded-md"></div>
+            <div class="dropzone p-3">
+              <div class="aspect-[640/420] w-full rounded-xl overflow-hidden bg-[#07102a] relative">
+                <div id="stage2" class="media-stage">
+                  <video id="vid2" playsinline autoplay muted></video>
+                  <img id="img2" alt="" />
+                  <div id="roi2" class="roi-box yellow"></div>
+                  <div class="roi-hint">Custom ROI: ลากเพื่อเลือก • ลากกรอบเพื่อย้าย</div>
+                </div>
               </div>
 
               <div class="mt-3 grid grid-cols-3 gap-2">
-                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition glow-blue"
-                        onclick="fakeCam(2)">📷 Open Camera</button>
-                <button class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition"
-                        onclick="fakeCapture(2)">📸 Capture</button>
-                <label class="rounded-xl py-2 bg-[color:var(--blue)] text-white font-semibold hover:brightness-110 transition text-center cursor-pointer">
-                  📂 Upload
-                  <input type="file" accept="image/*" class="hidden" onchange="loadLocalImage(event, 2)" />
+                <button id="openCam2" class="btn-jarvis w-full">📷 OPEN</button>
+                <button id="cap2" class="btn-jarvis w-full">📸 CAPTURE</button>
+                <label class="btn-jarvis w-full text-center cursor-pointer">
+                  📂 UPLOAD
+                  <input type="file" accept="image/*" class="hidden" id="up2" />
                 </label>
               </div>
             </div>
           </div>
+
         </div>
 
-        <!-- Footer hint -->
-        <div class="mt-5 text-xs text-white/40">
-          * UI นี้เป็น Prototype (แยกจาก Python/Tkinter) เพื่อทำ “หน้าตา HTML ล้ำ ๆ” ก่อนต่อระบบจริง
+        <div class="mt-5 hud-mono text-xs">
+          * เปิดกล้องจริงด้วย <span class="text-white/90">navigator.mediaDevices.getUserMedia()</span> → ต้องเปิดผ่าน https และ Allow camera ใน Chrome
         </div>
       </section>
     </div>
   </main>
 
+  <canvas id="capCanvas" class="hidden"></canvas>
+
   <script>
-    // ------- Small helpers -------
     const $ = (id)=>document.getElementById(id);
 
+    // ===== Threshold helper =====
     function thrFromSensitivity(sens){
       sens = Math.max(0, Math.min(100, sens|0));
-      // mimic python: 0% -> 90, 100% -> 10
       const thr = Math.round(90 + (10-90) * (sens/100));
       return Math.max(1, thr);
     }
 
+    // ===== Camera status =====
     function setCamStatus(isBusy, owner){
       if(!isBusy){
-        $("camStatusDot").className = "w-2.5 h-2.5 rounded-full bg-[color:var(--green)] glow-green";
-        $("camStatus").textContent = "Camera Status : FREE";
-        $("camStatus").className = "text-sm font-semibold text-[color:var(--green)]";
+        $("camStatus").textContent = "FREE";
+        $("camStatus").className = "text-sm font-extrabold text-cyan-200";
       }else{
-        $("camStatusDot").className = "w-2.5 h-2.5 rounded-full bg-[color:var(--red)] glow-red";
-        $("camStatus").textContent = `Camera Status : BUSY (Picture ${owner})`;
-        $("camStatus").className = "text-sm font-semibold text-[color:var(--red)]";
+        $("camStatus").textContent = `BUSY (P${owner})`;
+        $("camStatus").className = "text-sm font-extrabold text-red-300";
       }
     }
 
-    // ------- Fake camera buttons (UI demo only) -------
-    let busy = false;
-    function fakeCam(owner){
-      busy = true;
-      setCamStatus(true, owner);
-      // demo: auto-release after 2 sec
-      setTimeout(()=>{ busy=false; setCamStatus(false); }, 2000);
-    }
-    function fakeCapture(owner){
-      // demo only
-      alert(`Capture (demo) for Picture ${owner}\n\nต่อจริง: ปุ่มนี้จะเรียก backend/python เพื่อ capture frame`);
+    // ===== Real camera (getUserMedia) =====
+    const streams = {1:null, 2:null};
+
+    async function openCamera(which){
+      try{
+        stopCamera(which);
+        setCamStatus(true, which);
+
+        const constraints = {
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height:{ ideal: 720 }
+          },
+          audio: false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        streams[which] = stream;
+
+        const vid = which===1 ? $("vid1") : $("vid2");
+        vid.srcObject = stream;
+        vid.style.display = "block";
+
+        const img = which===1 ? $("img1") : $("img2");
+        img.style.opacity = "0";
+
+      }catch(err){
+        setCamStatus(false);
+        console.error("openCamera error:", err);
+
+        const map = {
+          NotAllowedError: "ไม่อนุญาต Camera (โดน Block หรือยังไม่ได้ Allow)",
+          NotFoundError: "ไม่พบกล้อง (หรือกล้องถูกปิด/ไม่ถูกตรวจพบ)",
+          NotReadableError: "กล้องถูกโปรแกรมอื่นใช้อยู่ (Zoom/Teams/OBS)",
+          OverconstrainedError: "ตั้งค่าความละเอียดสูงเกิน (constraints ไม่ผ่าน)"
+        };
+        alert(`เปิดกล้องไม่สำเร็จ: ${map[err.name] || err.name}\n\nลองทำ:\n1) คลิกกุญแจหน้า URL → Camera → Allow\n2) ปิดโปรแกรมที่ใช้กล้อง\n3) Reload แล้วลองใหม่`);
+      }
     }
 
-    // ------- Load local image preview -------
-    function loadLocalImage(evt, target){
-      const file = evt.target.files?.[0];
+    function stopCamera(which){
+      const stream = streams[which];
+      if(stream){
+        stream.getTracks().forEach(t=>t.stop());
+        streams[which] = null;
+      }
+      const vid = which===1 ? $("vid1") : $("vid2");
+      vid.style.display = "none";
+      vid.srcObject = null;
+      setCamStatus(false);
+    }
+
+    function captureFrame(which){
+      const vid = which===1 ? $("vid1") : $("vid2");
+      if(!streams[which] || vid.style.display==="none"){
+        alert("ยังไม่ได้เปิดกล้อง\nกด OPEN ก่อนครับ");
+        return;
+      }
+
+      const c = $("capCanvas");
+      c.width = vid.videoWidth || 1280;
+      c.height = vid.videoHeight || 720;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(vid, 0, 0, c.width, c.height);
+
+      const dataUrl = c.toDataURL("image/png");
+      const img = which===1 ? $("img1") : $("img2");
+      img.src = dataUrl;
+      img.style.opacity = "1";
+    }
+
+    // ===== Upload preview =====
+    function loadLocalImage(file, which){
       if(!file) return;
       const url = URL.createObjectURL(file);
-      if(target===1) $("img1").src = url;
-      else $("img2").src = url;
+      const img = which===1 ? $("img1") : $("img2");
+      img.src = url;
+      img.style.opacity = "1";
+      stopCamera(which);
     }
 
-    // ------- Controls bindings -------
+    // ===== ROI interaction (drag to create + drag to move) =====
+    const roiState = {
+      1: { active:false, drawing:false, moving:false, x:0,y:0,w:0,h:0, startX:0,startY:0, moveDX:0, moveDY:0 },
+      2: { active:false, drawing:false, moving:false, x:0,y:0,w:0,h:0, startX:0,startY:0, moveDX:0, moveDY:0 }
+    };
+
+    function isCustomROI(){
+      return document.querySelector('input[name="roiMode"]:checked')?.value === "custom";
+    }
+    function roiEnabled(){ return $("toggleROI").checked; }
+    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+    function updateRoiText(which, n){
+      const el = which===1 ? $("roi1Text") : $("roi2Text");
+      if(!n){ el.textContent = "-"; return; }
+      const f = (x)=> (Math.round(x*1000)/1000).toFixed(3);
+      el.textContent = `x=${f(n.nx)} y=${f(n.ny)} w=${f(n.nw)} h=${f(n.nh)}`;
+    }
+
+    function setROIBox(which){
+      const box = which===1 ? $("roi1") : $("roi2");
+      const st = roiState[which];
+
+      if(!roiEnabled() || !st.active){
+        box.style.display = "none";
+        updateRoiText(which, null);
+        return;
+      }
+      box.style.display = "block";
+      box.style.left = st.x + "px";
+      box.style.top  = st.y + "px";
+      box.style.width  = st.w + "px";
+      box.style.height = st.h + "px";
+
+      const stage = which===1 ? $("stage1") : $("stage2");
+      const rect = stage.getBoundingClientRect();
+      const nx = (st.x / rect.width);
+      const ny = (st.y / rect.height);
+      const nw = (st.w / rect.width);
+      const nh = (st.h / rect.height);
+      updateRoiText(which, {nx,ny,nw,nh});
+    }
+
+    function attachROI(stageId, which){
+      const stage = $(stageId);
+      const box = which===1 ? $("roi1") : $("roi2");
+      const st = roiState[which];
+
+      const getPos = (e)=>{
+        const r = stage.getBoundingClientRect();
+        const x = clamp(e.clientX - r.left, 0, r.width);
+        const y = clamp(e.clientY - r.top, 0, r.height);
+        return {x,y,w:r.width,h:r.height};
+      };
+
+      stage.addEventListener("mousedown", (e)=>{
+        if(!roiEnabled() || !isCustomROI()) return;
+
+        const p = getPos(e);
+
+        if(st.active){
+          const within =
+            p.x >= st.x && p.x <= st.x + st.w &&
+            p.y >= st.y && p.y <= st.y + st.h;
+          if(within){
+            st.moving = true;
+            st.moveDX = p.x - st.x;
+            st.moveDY = p.y - st.y;
+            return;
+          }
+        }
+
+        st.drawing = true;
+        st.active = true;
+        st.startX = p.x;
+        st.startY = p.y;
+        st.x = p.x; st.y = p.y; st.w = 0; st.h = 0;
+        setROIBox(which);
+      });
+
+      window.addEventListener("mousemove", (e)=>{
+        if(!roiEnabled() || !isCustomROI()) return;
+
+        const p = getPos(e);
+
+        if(st.drawing){
+          const x1 = st.startX, y1 = st.startY;
+          const x2 = p.x, y2 = p.y;
+          st.x = Math.min(x1,x2);
+          st.y = Math.min(y1,y2);
+          st.w = Math.abs(x2-x1);
+          st.h = Math.abs(y2-y1);
+
+          if(st.w < 6) st.w = 6;
+          if(st.h < 6) st.h = 6;
+
+          setROIBox(which);
+        }else if(st.moving){
+          st.x = clamp(p.x - st.moveDX, 0, p.w - st.w);
+          st.y = clamp(p.y - st.moveDY, 0, p.h - st.h);
+          setROIBox(which);
+        }
+      });
+
+      window.addEventListener("mouseup", ()=>{
+        st.drawing = false;
+        st.moving = false;
+      });
+
+      box.addEventListener("mousedown", (e)=>{
+        if(!roiEnabled() || !isCustomROI()) return;
+        e.stopPropagation();
+        const p = getPos(e);
+        st.moving = true;
+        st.moveDX = p.x - st.x;
+        st.moveDY = p.y - st.y;
+      });
+    }
+
+    function applyRoiCursor(){
+      [$("stage1"), $("stage2")].forEach(s=>{
+        if(roiEnabled() && isCustomROI()) s.classList.add("draw-cursor");
+        else s.classList.remove("draw-cursor");
+      });
+    }
+
+    // ===== Controls bindings =====
     const failRange = $("failRange");
     const roiRange  = $("roiRange");
     const sensRange = $("sensRange");
@@ -353,51 +697,84 @@
       $("failVal").textContent = `${(+failRange.value).toFixed(1)}%`;
       $("roiVal").textContent  = `${roiRange.value}%`;
       $("sensVal").textContent = `${sensRange.value}%`;
-      $("thrText").textContent = `thr=${thrFromSensitivity(+sensRange.value)}`;
+      $("thrText").textContent = `${thrFromSensitivity(+sensRange.value)}`;
     }
     [failRange, roiRange, sensRange].forEach(r => r.addEventListener("input", syncLabels));
     syncLabels();
 
-    // brightness/contrast labels
-    function pctB(v){ return `${v>0?'+':''}${v}%`; }
-    function pctC(v){ return `${v}%`; }
-
-    $("p1Bri").addEventListener("input", e => $("p1B").textContent = pctB(+e.target.value));
-    $("p2Bri").addEventListener("input", e => $("p2B").textContent = pctB(+e.target.value));
-    $("p1Con").addEventListener("input", e => $("p1C").textContent = pctC(+e.target.value));
-    $("p2Con").addEventListener("input", e => $("p2C").textContent = pctC(+e.target.value));
-
-    // ------- Compare button (UI demo) -------
+    // ===== Compare demo (placeholder) =====
     $("btnCompare").addEventListener("click", ()=>{
-      // demo random result
       const diff = (Math.random()*18).toFixed(2);
-      $("diffText").textContent = `Difference : ${diff} %`;
-
+      $("diffText").textContent = diff;
       const failLimit = +failRange.value;
-      if(+diff > failLimit){
-        $("resultText").textContent = "❌ FAIL";
-        $("resultText").className = "text-xl font-extrabold text-[color:var(--red)]";
-      }else{
-        $("resultText").textContent = "✅ PASS";
-        $("resultText").className = "text-xl font-extrabold text-[color:var(--green)]";
-      }
+      $("resultText").textContent = (+diff > failLimit) ? "FAIL" : "PASS";
     });
 
     $("btnReset").addEventListener("click", ()=>{
       failRange.value = 10;
       roiRange.value = 40;
       sensRange.value = 60;
-      $("p1Bri").value = 0; $("p2Bri").value = 0;
-      $("p1Con").value = 100; $("p2Con").value = 100;
       $("toggleROI").checked = true;
       $("toggleOverlay").checked = true;
 
-      $("diffText").textContent = "Difference : -- %";
-      $("resultText").textContent = "RESULT : -";
-      $("resultText").className = "text-xl font-extrabold text-white";
+      $("diffText").textContent = "--";
+      $("resultText").textContent = "-";
       syncLabels();
-      $("p1B").textContent = "0%"; $("p2B").textContent = "0%";
-      $("p1C").textContent = "100%"; $("p2C").textContent = "100%";
+
+      [1,2].forEach(k=>{
+        roiState[k].active=false;
+        setROIBox(k);
+      });
+      applyRoiCursor();
+    });
+
+    // ===== Wire buttons =====
+    $("openCam1").addEventListener("click", ()=>openCamera(1));
+    $("openCam2").addEventListener("click", ()=>openCamera(2));
+    $("cap1").addEventListener("click", ()=>captureFrame(1));
+    $("cap2").addEventListener("click", ()=>captureFrame(2));
+    $("up1").addEventListener("change", (e)=>loadLocalImage(e.target.files?.[0], 1));
+    $("up2").addEventListener("change", (e)=>loadLocalImage(e.target.files?.[0], 2));
+
+    // ROI mode changes
+    document.querySelectorAll('input[name="roiMode"]').forEach(r=>{
+      r.addEventListener("change", ()=>applyRoiCursor());
+    });
+    $("toggleROI").addEventListener("change", ()=>{
+      [1,2].forEach(k=>setROIBox(k));
+      applyRoiCursor();
+    });
+
+    attachROI("stage1", 1);
+    attachROI("stage2", 2);
+    applyRoiCursor();
+
+    // ===== Permission check (best-effort) =====
+    async function checkPermission(){
+      try{
+        if(!navigator.permissions){
+          $("permText").textContent = "Camera: (permissions API not available)";
+          $("permHint").textContent = "PERMISSION: UNKNOWN";
+          return;
+        }
+        const res = await navigator.permissions.query({ name: "camera" });
+        $("permText").textContent = `Camera: ${res.state}`;
+        $("permHint").textContent = `PERMISSION: ${res.state.toUpperCase()}`;
+        res.onchange = ()=>{
+          $("permText").textContent = `Camera: ${res.state}`;
+          $("permHint").textContent = `PERMISSION: ${res.state.toUpperCase()}`;
+        };
+      }catch{
+        $("permText").textContent = "Camera: (cannot query permission)";
+        $("permHint").textContent = "PERMISSION: UNKNOWN";
+      }
+    }
+    checkPermission();
+
+    // stop camera on exit
+    window.addEventListener("beforeunload", ()=>{
+      stopCamera(1);
+      stopCamera(2);
     });
   </script>
 </body>
