@@ -398,6 +398,50 @@
             <div class="mt-2 hud-mono text-[11px]">Tip: Lock ON → ขยับได้อย่างเดียว (ไม่เปลี่ยนขนาด)</div>
           </div>
 
+          <!-- LIGHT / CONTRAST ADJUST -->
+          <div class="mt-4 hud-panel p-4 space-y-4">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="hud-title text-xs">LIGHT / CONTRAST ADJUST</div>
+                <div class="hud-mono text-[11px] mt-1">APPLY TO COMPARE ENGINE ONLY</div>
+              </div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input id="toggleLightAdjust" type="checkbox" checked class="hidden"/>
+                <span class="toggle"></span>
+              </label>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="hud-mono text-[11px]">BASE LIGHT</div>
+                <div class="hud-mono text-[11px] text-white/90" id="baseLightVal">0</div>
+              </div>
+              <input id="baseLightRange" type="range" min="-80" max="80" value="0" class="w-full mt-2"/>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="hud-mono text-[11px]">TARGET LIGHT</div>
+                <div class="hud-mono text-[11px] text-white/90" id="targetLightVal">0</div>
+              </div>
+              <input id="targetLightRange" type="range" min="-80" max="80" value="0" class="w-full mt-2"/>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between">
+                <div class="hud-mono text-[11px]">CONTRAST</div>
+                <div class="hud-mono text-[11px] text-white/90" id="contrastVal">100%</div>
+              </div>
+              <input id="contrastRange" type="range" min="50" max="180" value="100" class="w-full mt-2"/>
+            </div>
+
+            <button id="btnLightReset" class="btn-jarvis w-full">↩ RESET LIGHT / CONTRAST</button>
+
+            <div class="hud-mono text-[11px]">
+              ใช้สำหรับชดเชยภาพมืด/สว่างไม่เท่ากันก่อนคำนวณ DIFF โดยไม่แก้ภาพต้นฉบับและไม่กระทบ ROI / Camera / Preset
+            </div>
+          </div>
+
           <!-- SETTINGS -->
           <div class="mt-4 hud-panel p-4 space-y-4">
             <div class="hud-title text-xs">INSPECTION SETTINGS</div>
@@ -1044,6 +1088,27 @@
       return rt.q.reduce((a,b)=>a+b,0)/rt.q.length;
     }
 
+    function lightAdjustEnabled(){ return $("toggleLightAdjust")?.checked ?? false; }
+    function baseLight(){ return +($("baseLightRange")?.value ?? 0); }
+    function targetLight(){ return +($("targetLightRange")?.value ?? 0); }
+    function contrastFactor(){ return (+($("contrastRange")?.value ?? 100)) / 100; }
+
+    // ✅ ปรับแสง/Contrast เฉพาะ buffer ที่ใช้คำนวณเท่านั้น ไม่แตะภาพจริงบนจอ
+    function applyLightContrastToCanvas(canvas, brightness, contrast){
+      if(!lightAdjustEnabled()) return;
+
+      const ctx = canvas.getContext("2d");
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+
+      for(let i=0; i<data.length; i+=4){
+        data[i]   = clamp(((data[i]   - 128) * contrast) + 128 + brightness, 0, 255);
+        data[i+1] = clamp(((data[i+1] - 128) * contrast) + 128 + brightness, 0, 255);
+        data[i+2] = clamp(((data[i+2] - 128) * contrast) + 128 + brightness, 0, 255);
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
     function computeAndOverlay(baseImg, liveSource, useVideo){
       const stage2 = $("stage2");
 
@@ -1075,6 +1140,10 @@
 
       ctxB.drawImage(baseImg, roiB.mx, roiB.my, roiB.mw, roiB.mh, 0,0, rt.w,rt.h);
       ctxL.drawImage(liveSource, roiV.mx, roiV.my, roiV.mw, roiV.mh, 0,0, rt.w,rt.h);
+
+      const cFactor = contrastFactor();
+      applyLightContrastToCanvas(rt.cBase, baseLight(), cFactor);
+      applyLightContrastToCanvas(rt.cLive, targetLight(), cFactor);
 
       const idB = ctxB.getImageData(0,0,rt.w,rt.h);
       const idL = ctxL.getImageData(0,0,rt.w,rt.h);
@@ -1293,18 +1362,33 @@
     const sensRange = $("sensRange");
     const smoothRange = $("smoothRange");
     const alignR = $("alignRange");
+    const baseLightRange = $("baseLightRange");
+    const targetLightRange = $("targetLightRange");
+    const contrastRange = $("contrastRange");
 
     function syncLabels(){
       $("failVal").textContent = `${(+failRange.value).toFixed(1)}%`;
       $("sensVal").textContent = `${sensRange.value}%`;
       $("smoothVal").textContent = `${smoothRange.value}`;
       $("alignRangeVal").textContent = `${alignR.value}`;
+      $("baseLightVal").textContent = `${baseLightRange.value}`;
+      $("targetLightVal").textContent = `${targetLightRange.value}`;
+      $("contrastVal").textContent = `${contrastRange.value}%`;
       $("thrText").textContent = `${thrFromSensitivity(+sensRange.value)}`;
       $("thrBig").textContent = `${thrFromSensitivity(+sensRange.value)}`;
       $("limitBig").textContent = (+failRange.value).toFixed(1);
     }
-    [failRange, sensRange, smoothRange, alignR].forEach(r => r.addEventListener("input", syncLabels));
+    [failRange, sensRange, smoothRange, alignR, baseLightRange, targetLightRange, contrastRange]
+      .forEach(r => r.addEventListener("input", syncLabels));
     syncLabels();
+
+    $("btnLightReset").addEventListener("click", ()=>{
+      baseLightRange.value = 0;
+      targetLightRange.value = 0;
+      contrastRange.value = 100;
+      $("toggleLightAdjust").checked = true;
+      syncLabels();
+    });
 
     $("btnCompare").addEventListener("click", compareCaptureOnce);
     $("btnExport").addEventListener("click", exportReport);
@@ -1314,8 +1398,12 @@
       sensRange.value = 60;
       smoothRange.value = 8;
       alignR.value = 8;
+      baseLightRange.value = 0;
+      targetLightRange.value = 0;
+      contrastRange.value = 100;
 
       $("toggleROI").checked = true;
+      $("toggleLightAdjust").checked = true;
       $("toggleLockROI").checked = false;
       $("toggleOverlay").checked = true;
       $("toggleHeatmap").checked = true;
